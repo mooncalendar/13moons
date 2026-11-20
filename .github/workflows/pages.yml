@@ -72,6 +72,29 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+      - name: Comprobar que el sitio responde y sirve la app
+        run: |
+          set -euo pipefail
+          url="${{ steps.deployment.outputs.page_url }}"
+          # Pages tarda unos segundos en propagar el despliegue nuevo
+          for i in $(seq 1 10); do
+            code=$(curl -s -o /tmp/index.html -w '%{http_code}' "$url" || true)
+            [ "$code" = "200" ] && break
+            echo "intento $i: HTTP ${code:-sin respuesta}, esperando…"
+            sleep 6
+          done
+          test "${code:-000}" = "200" || { echo "index.html devuelve ${code:-000}"; exit 1; }
+          test -s /tmp/index.html || { echo "index.html vacío"; exit 1; }
+          # que sea la app y no una página de error disfrazada
+          grep -q '13 Lunas' /tmp/index.html || { echo "el HTML no parece la app"; exit 1; }
+          grep -q 'src="app.js"' /tmp/index.html || { echo "falta la referencia a app.js"; exit 1; }
+          for asset in app.js i18n.js; do
+            curl -fsS "${url}${asset}" -o "/tmp/$asset"
+            test -s "/tmp/$asset" || { echo "$asset no se sirve"; exit 1; }
+            echo "$asset: $(wc -c < "/tmp/$asset") bytes"
+          done
+          echo "publicado y legible: $url"
+
       - name: Resumen
         run: |
           echo "### Publicado" >> "$GITHUB_STEP_SUMMARY"

@@ -92,7 +92,14 @@ dentro del artefacto; un archivo olvidado en el `cp` dejaría la página en blan
 así que el despliegue se corta ahí en lugar de publicar algo roto.
 
 Las rutas de la app son todas relativas (`src="i18n.js"`), de modo que funciona
-igual servida desde la raíz que desde el subdirectorio `/13moons/`.
+igual servida desde la raíz que desde el subdirectorio `/13moons/`. Eso no se da
+por supuesto: `tests/check_served.py` monta el mismo artefacto, lo sirve por HTTP
+bajo `/13moons/` y le pasa la suite entera; `tests/check.py --base <url>` hace lo
+mismo contra el sitio ya publicado.
+
+Después de desplegar, el propio workflow descarga la página y los dos scripts y
+falla si no responden 200 o si el HTML no es la app. Si Pages tarda en propagar,
+reintenta durante un minuto antes de darse por vencido.
 
 ## Cómo se calcula (y cómo se verificó)
 
@@ -190,6 +197,8 @@ python3 tests/check.py -l de      # un idioma suelto
 Y las sondas sueltas, para mirar un detalle concreto:
 
 ```
+python3 tests/check_served.py                                     # el artefacto servido como en Pages
+python3 tests/check.py --base https://mooncalendar.github.io/13moons   # contra el sitio ya publicado
 python3 tests/shot_mobile.py es                                   # captura a 390 px
 python3 tests/verify_pixels.py 2026-11-01 79 1110 tests/shots/desktop_es.png
 python3 tests/markers.py                                          # rayas en 4 fechas

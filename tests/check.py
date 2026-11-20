@@ -21,6 +21,10 @@ import sys
 import zlib
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# de dónde se sirve la página: por defecto el propio directorio (file://),
+# pero con --base se puede apuntar a cualquier URL — un servidor local o el
+# sitio ya publicado en Pages — y la misma suite comprueba ese original.
+URL_BASE = 'file://' + BASE
 WORK = os.path.join(BASE, 'tests', 'work')
 PROFILE = os.path.join(BASE, 'tests', 'profile')
 LANGS = ['es', 'pt', 'en', 'de']
@@ -148,7 +152,7 @@ def test_data(langs):
     fails = 0
     for lang in langs:
         png = os.path.join(WORK, 'data_%s.png' % lang)
-        url = 'file://%s/index.html?barcode=1&lang=%s&d=2026-11-01' % (BASE, lang)
+        url = '%s/index.html?barcode=1&lang=%s&d=2026-11-01' % (URL_BASE, lang)
         browser(url, png, 240, 290)
         _, _, vals = read_barcode(png, len(DATA_CASES), 12, 20)
         bad = [(lab, got, want) for (want, lab, tol), got in zip(DATA_CASES, vals)
@@ -168,7 +172,7 @@ def test_layout(langs):
     for lang in langs:
         for w, h, tag in [(1280, 900, 'desk'), (390, 844, 'mob')]:
             png = os.path.join(WORK, 'layout_%s_%s.png' % (lang, tag))
-            url = 'file://%s/index.html?barcode=layout&lang=%s&d=2026-11-01' % (BASE, lang)
+            url = '%s/index.html?barcode=layout&lang=%s&d=2026-11-01' % (URL_BASE, lang)
             browser(url, png, w, h)
             _, _, vals = read_barcode(png, len(LAYOUT_NAMES), 14, 16)
             g = dict(zip(LAYOUT_NAMES, vals))
@@ -227,7 +231,7 @@ def test_selftest(langs):
     """El autotest de la app no imprime ningún FAIL y los nombres están traducidos."""
     fails = 0
     for lang in langs:
-        url = 'file://%s/index.html?selftest=1&lang=%s' % (BASE, lang)
+        url = '%s/index.html?selftest=1&lang=%s' % (URL_BASE, lang)
         shot = os.path.join(WORK, 'selftest_%s.png' % lang)
         # sin --screenshot Firefox queda abierto; la captura además deja
         # el panel del autotest como registro visual en tests/work/
@@ -270,12 +274,12 @@ def test_shots(langs):
     fails = 0
     for lang in langs:
         probe = os.path.join(WORK, 'probe_%s.png' % lang)
-        url = 'file://%s/index.html?barcode=layout&lang=%s&d=2026-11-01' % (BASE, lang)
+        url = '%s/index.html?barcode=layout&lang=%s&d=2026-11-01' % (URL_BASE, lang)
         browser(url, probe, 1280, 900)
         _, _, vals = read_barcode(probe, len(LAYOUT_NAMES), 14, 16)
         height = min(6000, dict(zip(LAYOUT_NAMES, vals))['scrollHeight'] + 8)
         png = os.path.join(outdir, 'desktop_%s.png' % lang)
-        browser('file://%s/index.html?lang=%s&d=2026-11-01' % (BASE, lang),
+        browser('%s/index.html?lang=%s&d=2026-11-01' % (URL_BASE, lang),
                 png, 1280, height)
         w, h, ch, px = read_png(png, max_rows=600)
         dark = sum(1 for i in range(0, len(px), ch * 37) if px[i] < 200)
@@ -294,7 +298,15 @@ def main():
     ap.add_argument('--shots', action='store_true', help='capturas de página completa')
     ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'shots'],
                     help='ejecutar sólo un grupo de pruebas')
+    ap.add_argument('--base',
+                    help='URL donde se sirve la app (por defecto: este directorio, '
+                         'p. ej. --base https://mooncalendar.github.io/13moons)')
     args = ap.parse_args()
+
+    global URL_BASE
+    if args.base:
+        URL_BASE = args.base.rstrip('/')
+        print('origen: %s' % URL_BASE)
 
     langs = [l.strip() for l in args.langs.split(',') if l.strip()]
     os.makedirs(WORK, exist_ok=True)
