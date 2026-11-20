@@ -50,10 +50,38 @@ jobs:
           done
           echo "artefacto OK: $(du -sh _site | cut -f1)"
 
-      - name: Activar Pages si aún no lo está
+      # Intenta activar Pages por API. Casi siempre falla: crear el sitio
+      # exige permiso de administración y el GITHUB_TOKEN no lo tiene, así que
+      # este paso es best-effort y el que decide de verdad es el siguiente.
+      - name: Intentar activar Pages
+        id: pages
+        continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
+
+      # Pages se activa una sola vez, a mano, en Settings → Pages. Sin eso el
+      # despliegue falla más adelante con un error genérico; aquí se dice qué
+      # hacer y se corta antes de gastar el resto del trabajo.
+      - name: Comprobar que Pages está activado
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /tmp/pages.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/pages" || true)
+          echo "Pages API: HTTP $code"
+          if [ "$code" != "200" ]; then
+            {
+              echo "::error title=Pages no está activado::GitHub Pages aún no está habilitado en ${{ github.repository }}."
+              echo "Actívalo una vez: Settings → Pages → Source: GitHub Actions."
+              echo "Después vuelve a ejecutar este workflow (Actions → Run workflow)."
+            } >&2
+            echo "### Falta un paso manual" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            echo "Activa Pages una vez en **Settings → Pages → Source: GitHub Actions**." >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            exit 1
+          fi
+          cat /tmp/pages.json | head -c 300
 
       - name: Empaquetar el artefacto
         uses: actions/upload-pages-artifact@v3
@@ -97,5 +125,5 @@ jobs:
 
       - name: Resumen
         run: |
-          echo "### Publicado" >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Publicado" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          echo "${{ steps.deployment.outputs.page_url }}" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"

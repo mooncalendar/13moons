@@ -84,6 +84,12 @@ El sitio vive en **https://mooncalendar.github.io/13moons/**. Lo publica
 `.github/workflows/pages.yml` en cada push a `main` (o a mano desde la pestaña
 *Actions*, `workflow_dispatch`).
 
+**Antes del primer despliegue** hay que activar Pages una sola vez, a mano:
+*Settings → Pages → Source: GitHub Actions*. El workflow intenta activarlo por
+API, pero crear el sitio exige permiso de administración y el `GITHUB_TOKEN` no
+lo tiene; si falta, el flujo se corta en el paso «Comprobar que Pages está
+activado» con ese mensaje en vez de fallar más tarde con un error genérico.
+
 El flujo copia a `_site` sólo lo que el navegador necesita —`index.html`,
 `app.js`, `i18n.js`— y nada de `tests/` ni `docs/`, para que el sitio publicado
 no lleve la suite dentro. Antes de empaquetar comprueba dos cosas: que los tres
