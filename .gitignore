@@ -2,6 +2,7 @@
 tests/work/
 tests/profile/
 tests/shots/
+_site/
 __pycache__/
 *.pyc
 

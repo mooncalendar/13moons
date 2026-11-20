@@ -78,6 +78,22 @@ xdg-open index.html
 - `index.html?d=2028-02-29` abre una fecha concreta.
 - `index.html?lang=de` abre en alemán.
 
+## Publicación
+
+El sitio vive en **https://mooncalendar.github.io/13moons/**. Lo publica
+`.github/workflows/pages.yml` en cada push a `main` (o a mano desde la pestaña
+*Actions*, `workflow_dispatch`).
+
+El flujo copia a `_site` sólo lo que el navegador necesita —`index.html`,
+`app.js`, `i18n.js`— y nada de `tests/` ni `docs/`, para que el sitio publicado
+no lleve la suite dentro. Antes de empaquetar comprueba dos cosas: que los tres
+archivos existen y no están vacíos, y que cada `<script src>` del HTML resuelve
+dentro del artefacto; un archivo olvidado en el `cp` dejaría la página en blanco,
+así que el despliegue se corta ahí en lugar de publicar algo roto.
+
+Las rutas de la app son todas relativas (`src="i18n.js"`), de modo que funciona
+igual servida desde la raíz que desde el subdirectorio `/13moons/`.
+
 ## Cómo se calcula (y cómo se verificó)
 
 ### Sincronario de 13 Lunas
