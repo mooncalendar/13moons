@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sincronario de las 13 Lunas — Calendario lunar</title>
+<meta name="description" content="Calendario lunar interactivo: fase de la luna, luna del año en el Sincronario de 13 Lunas, kin del Tzolkin, constelación zodiacal y referencia gregoriana.">
+<meta name="theme-color" content="#06070d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%23090a12'/%3E%3Cpath d='M16 3a13 13 0 0 1 0 26 9.5 9.5 0 0 0 0-26z' fill='%23f0e4c6'/%3E%3Ccircle cx='16' cy='16' r='14.2' fill='none' stroke='%23e5c07b' stroke-opacity='.5'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg:#06070d;
+    --bg2:#0b0d18;
+    --panel:rgba(255,255,255,.036);
+    --panel2:rgba(255,255,255,.055);
+    --line:rgba(255,255,255,.085);
+    --line2:rgba(255,255,255,.16);
+    --text:#eae8f4;
+    --muted:#9693ad;
+    --muted2:#6d6a82;
+    --gold:#e5c07b;
+    --gold2:#c9a15a;
+    --violet:#8b7cf6;
+    --teal:#5fd6c4;
+    --red:#e0544e;
+    --white:#eef1f8;
+    --blue:#4f81e6;
+    --yellow:#e8b53c;
+    --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,"Times New Roman",Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --r:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 700px at 78% -10%, rgba(139,124,246,.20), transparent 62%),
+      radial-gradient(900px 600px at 8% 8%, rgba(95,214,196,.10), transparent 60%),
+      radial-gradient(1200px 900px at 50% 118%, rgba(229,192,123,.10), transparent 65%),
+      linear-gradient(180deg,#06070d 0%,#080a13 45%,#06070d 100%);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+    min-height:100%;
+    overflow-x:hidden;
+  }
+  /* ---------- starfield ---------- */
+  #stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d) ease-in-out infinite alternate}
+  @keyframes twinkle{from{opacity:.15;transform:scale(.85)}to{opacity:.85;transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){.star{animation:none;opacity:.45}}
+
+  .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:38px 22px 64px}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;flex-direction:column;gap:22px;margin-bottom:30px}
+  .brandline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  .brandline h1{
+    font-family:var(--serif);font-weight:400;font-size:clamp(26px,3.4vw,40px);
+    margin:0;letter-spacing:.01em;
+    background:linear-gradient(100deg,#fff 10%,#e5c07b 55%,#b9a2ff 92%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brandline .sub{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted2)}
+  .nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{
+    appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--panel);
+    color:var(--text);border-radius:11px;padding:9px 13px;font:inherit;font-size:13px;
+    transition:.22s ease;display:inline-flex;align-items:center;gap:8px;line-height:1;
+  }
+  .btn:hover{background:var(--panel2);border-color:var(--line2);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.icon{padding:9px 11px}
+  .btn.accent{border-color:rgba(229,192,123,.4);color:var(--gold);background:rgba(229,192,123,.08)}
+  .btn.accent:hover{background:rgba(229,192,123,.15)}
+  input[type=date]{
+    appearance:none;background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:11px;padding:8px 11px;font:inherit;font-size:13px;color-scheme:dark;
+  }
+  input[type=date]:focus,button:focus-visible{outline:2px solid rgba(139,124,246,.6);outline-offset:2px}
+
+  /* ---------- language switch ---------- */
+  .langsw{display:inline-flex;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel)}
+  .langsw button{
+    appearance:none;border:0;background:transparent;color:var(--muted2);font:inherit;font-size:11px;
+    letter-spacing:.09em;padding:9px 9px;cursor:pointer;transition:.18s ease;line-height:1;
+  }
+  .langsw button + button{border-left:1px solid var(--line)}
+  .langsw button:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .langsw button.on{color:#0d0f18;background:linear-gradient(120deg,var(--gold),#f0d7a2);font-weight:700}
+
+  /* ---------- generic card ---------- */
+  .card{
+    position:relative;border:1px solid var(--line);border-radius:var(--r);
+    background:linear-gradient(170deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+    padding:22px 22px 20px;overflow:hidden;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    box-shadow:0 18px 46px -30px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.055);
+  }
+  .card::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(420px 220px at 88% -20%,rgba(139,124,246,.14),transparent 70%);
+    opacity:.75;
+  }
+  .card > *{position:relative;z-index:1}
+  .eyebrow{
+    font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted2);
+    display:flex;align-items:center;gap:9px;margin:0 0 14px;
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  h2{font-family:var(--serif);font-weight:450;margin:0;line-height:1.2}
+
+  /* ---------- hero ---------- */
+  .hero{display:grid;grid-template-columns:400px 1fr;gap:18px;margin-bottom:18px}
+  @media (max-width:900px){.hero{grid-template-columns:1fr}}
+
+  .mooncard{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:26px}
+  .moonglow{position:relative;width:250px;height:250px;display:grid;place-items:center;margin-bottom:6px}
+  .moonglow::before{
+    content:"";position:absolute;width:96%;height:96%;border-radius:50%;
+    background:radial-gradient(circle,rgba(240,232,214,.30),rgba(229,192,123,.10) 45%,transparent 70%);
+    filter:blur(18px);opacity:.9;
+  }
+  svg.moon{width:250px;height:250px;display:block;position:relative;filter:drop-shadow(0 0 26px rgba(233,222,198,.18))}
+  .phasename{font-family:var(--serif);font-size:27px;margin:8px 0 2px}
+  .phasealt{font-size:12px;color:var(--muted2);letter-spacing:.05em;margin-bottom:14px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:4px}
+  .kvi{border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:rgba(255,255,255,.022);text-align:left}
+  .kvi b{display:block;font-family:var(--serif);font-size:19px;font-weight:450;letter-spacing:.01em}
+  .kvi span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2)}
+
+  /* ---------- main 13-moon card ---------- */
+  .bigdate{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap}
+  .moonnum{display:flex;align-items:baseline;gap:12px}
+  .moonnum .n{font-family:var(--serif);font-size:64px;line-height:.9;color:var(--gold)}
+  .moonnum .of{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted2);line-height:1.5}
+  .moonname{font-family:var(--serif);font-size:clamp(24px,3vw,34px);line-height:1.15;margin:2px 0 4px}
+  .totem{font-size:13px;color:var(--muted);letter-spacing:.04em}
+  .totem em{color:var(--gold2);font-style:normal}
+
+  .tagrow{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
+  .tag{
+    font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:999px;padding:5px 11px;
+  }
+  .tag.hi{color:#0d0f18;background:linear-gradient(120deg,var(--gold),#f0d7a2);border-color:transparent;font-weight:650}
+
+  .meter{margin-top:18px}
+  .meter .lbl{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted2);margin-bottom:7px}
+  .bar{height:7px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+  .bar > i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--gold2),var(--gold),#f6e6c4);transition:width .6s cubic-bezier(.2,.8,.2,1)}
+  .bar.v > i{background:linear-gradient(90deg,#6c5ce7,#8b7cf6,#c3b6ff)}
+  .meter + .meter{margin-top:12px}
+
+  /* ---------- grid of 3 ---------- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:18px}
+  @media (max-width:980px){.grid3{grid-template-columns:1fr}}
+
+  /* kin */
+  .kinhead{display:flex;gap:16px;align-items:center}
+  .glyphbox{width:74px;height:74px;flex:0 0 auto;border-radius:16px;display:grid;place-items:center;
+    border:1px solid var(--line2);background:rgba(255,255,255,.04);position:relative}
+  .glyphbox svg{width:46px;height:46px}
+  .kinhead .k{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted2)}
+  .kinhead .nm{font-family:var(--serif);font-size:20px;line-height:1.25}
+  .kinhead .en{font-size:11.5px;color:var(--muted2);letter-spacing:.03em}
+  .rows{margin-top:16px;border-top:1px solid var(--line)}
+  .row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.045);font-size:13px}
+  .row span{color:var(--muted2);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding-top:2px}
+  .row b{font-weight:450;text-align:right}
+
+  /* tzolkin mini */
+  .tzolkin{display:grid;grid-template-columns:repeat(13,1fr);gap:2.5px;margin-top:16px}
+  .tzolkin div{aspect-ratio:1;border-radius:3px;background:rgba(255,255,255,.05);position:relative}
+  .tzolkin div.now{outline:1.6px solid #fff;outline-offset:1px;z-index:2;box-shadow:0 0 12px rgba(255,255,255,.6)}
+  .tzlegend{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-top:9px}
+
+  /* zodiac */
+  .zodiac{display:flex;gap:16px;align-items:center}
+  svg.wheel{width:150px;height:150px;flex:0 0 auto;overflow:visible}
+  .zinfo .sign{font-family:var(--serif);font-size:24px;line-height:1.2}
+  .zinfo .deg{font-family:var(--mono);font-size:12.5px;color:var(--gold);letter-spacing:.02em;margin-top:2px}
+  .zinfo .const{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .zinfo .const b{color:var(--teal);font-weight:500}
+  .note{font-size:11px;color:var(--muted2);line-height:1.55;margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
+
+  /* phases list */
+  .plist{display:grid;gap:7px;margin-top:6px}
+  .pitem{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12.5px;
+    border:1px solid var(--line);border-radius:11px;padding:7px 11px;background:rgba(255,255,255,.02)}
+  .pitem .pn{display:flex;align-items:center;gap:9px;color:var(--muted)}
+  .pitem .pn i{width:7px;height:7px;border-radius:50%;background:var(--gold);display:block}
+  .pitem b{font-weight:450;font-variant-numeric:tabular-nums}
+
+  /* ---------- calendar ---------- */
+  .calhead{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .calhead h2{font-size:22px}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-bottom:7px}
+  .dow span{text-align:center;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted2)}
+  .days{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+  .day{
+    position:relative;border:1px solid var(--line);border-radius:12px;padding:7px 7px 6px;min-height:74px;
+    background:rgba(255,255,255,.017);cursor:pointer;transition:.18s ease;display:flex;flex-direction:column;gap:2px;
+  }
+  .day:hover{background:rgba(255,255,255,.06);border-color:var(--line2);transform:translateY(-2px)}
+  .day.pad{background:transparent;border-color:transparent;cursor:default}
+  .day.pad:hover{transform:none}
+  .day .gn{font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+  .day .d13{font-family:var(--mono);font-size:10px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day .mini{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:4px}
+  .day .mini svg{width:17px;height:17px}
+  .day .dot{width:6px;height:6px;border-radius:50%;opacity:.95}
+  .day.today{border-color:rgba(229,192,123,.55);box-shadow:inset 0 0 0 1px rgba(229,192,123,.18)}
+  .day.today .gn{color:var(--gold)}
+  .day.sel{background:linear-gradient(170deg,rgba(229,192,123,.20),rgba(139,124,246,.13));border-color:rgba(229,192,123,.7)}
+  .day.doot{background:linear-gradient(170deg,rgba(139,124,246,.18),rgba(255,255,255,.02))}
+  .day .badge{position:absolute;top:5px;right:6px;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--violet)}
+  @media (max-width:620px){
+    .day{min-height:62px;padding:5px}
+    .day .d13{font-size:9px}
+    .day .mini svg{width:13px;height:13px}
+  }
+  @media (max-width:520px){
+    .zodiac{flex-direction:column;align-items:center;gap:12px}
+    .zinfo{text-align:center}
+    .zinfo .const{max-width:34ch;margin-left:auto;margin-right:auto}
+    .moonnum .n{font-size:52px}
+    .moonglow,svg.moon{width:212px;height:212px}
+  }
+
+  /* ---------- year strip ---------- */
+  .yearstrip{display:grid;grid-template-columns:repeat(13,1fr);gap:6px;margin-top:4px}
+  .ys{border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center;background:rgba(255,255,255,.02);
+      position:relative;transition:.2s;cursor:default}
+  .ys .num{font-family:var(--serif);font-size:15px;color:var(--muted)}
+  .ys .dd{font-family:var(--mono);font-size:9px;color:var(--muted2);margin-top:2px}
+  .ys.cur{background:linear-gradient(170deg,rgba(229,192,123,.24),rgba(139,124,246,.12));border-color:rgba(229,192,123,.6)}
+  .ys.cur .num{color:var(--gold)}
+  /* raya del día dentro de la luna: mismo lenguaje que la franja de abajo.
+     Translúcida a la altura del número (para no emborronar el dígito) y
+     sólida al pie, donde remata con la flecha que apunta a la franja. */
+  .ys .ymark{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;z-index:1;
+             background:linear-gradient(180deg,rgba(229,192,123,.18),rgba(229,192,123,.6))}
+  .ys .ymark::before{content:'';position:absolute;left:0;right:0;bottom:0;height:9px;
+                     background:var(--gold);box-shadow:0 0 10px rgba(229,192,123,.85)}
+  .ys .ymark::after{content:'';position:absolute;bottom:0;left:-4px;border-top:6px solid var(--gold);
+                    border-left:5px solid transparent;border-right:5px solid transparent}
+  .ys .num,.ys .dd{position:relative;z-index:2}
+  @media (max-width:760px){
+    .yearstrip{grid-template-columns:repeat(7,1fr)}
+    .ys .dd{display:none}
+  }
+  .ysl{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-top:10px}
+
+  /* franja gregoriana paralela: mismo tramo, repartido por meses */
+  .gtrack{position:relative;height:26px;margin-top:12px;border:1px solid var(--line);border-radius:9px;
+          overflow:hidden;background:rgba(255,255,255,.02)}
+  .gseg{position:absolute;top:0;bottom:0;overflow:hidden;display:flex;align-items:center;justify-content:center;
+        border-right:1px solid rgba(255,255,255,.07);font-family:var(--mono);font-size:9.5px;
+        letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+  .gseg:last-of-type{border-right:0}
+  .gseg i{font-style:normal;white-space:nowrap}
+  .gseg:nth-of-type(even){background:rgba(255,255,255,.028)}
+  .gseg.cur{background:linear-gradient(180deg,rgba(229,192,123,.26),rgba(229,192,123,.09));color:var(--gold)}
+  .gseg.cur i{font-weight:600}
+  .gcur{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--gold);z-index:2;
+        box-shadow:0 0 10px rgba(229,192,123,.9)}
+  .gcur::before{content:'';position:absolute;top:0;left:-4px;border-top:6px solid var(--gold);
+                border-left:5px solid transparent;border-right:5px solid transparent}
+  .glab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 10px;
+        font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-top:9px}
+  .glab span:last-child{margin-left:auto}
+  @media (max-width:520px){
+    .gtrack{height:22px}
+    .glab{font-size:9.5px;letter-spacing:.1em}
+  }
+
+  /* footer */
+  footer{margin-top:26px;color:var(--muted2);font-size:11.5px;line-height:1.7}
+  footer details{margin-top:10px}
+  footer summary{cursor:pointer;color:var(--muted);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase}
+  footer p{max-width:80ch}
+  footer a{color:var(--muted)}
+
+  .fade{animation:fade .5s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* sin movimiento para quien lo pide al sistema: las tarjetas entran ya
+     visibles (si no, se quedan a media animación y en capturas sale todo
+     translúcido) */
+  @media (prefers-reduced-motion:reduce){
+    .star{animation:none;opacity:.45}
+    .fade{animation:none}
+  }
+</style>
+</head>
+<body>
+<div id="stars" aria-hidden="true"></div>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brandline">
+      <h1 data-i18n="brand">Sincronario de las 13 Lunas</h1>
+      <span class="sub" data-i18n="brandSub">13&nbsp;luas · 28&nbsp;días · Tzolkin</span>
+    </div>
+    <div class="nav">
+      <button class="btn icon" id="prev" data-i18n-aria="prevDay" data-i18n-title="prevDay" data-title-suffix=" (←)" title="Día anterior (←)">‹</button>
+      <button class="btn accent" id="today" data-i18n="today" data-i18n-title="today" data-title-suffix=" (T)">Hoy</button>
+      <button class="btn icon" id="next" data-i18n-aria="nextDay" data-i18n-title="nextDay" data-title-suffix=" (→)" title="Día siguiente (→)">›</button>
+      <input type="date" id="datepick" data-i18n-aria="pickDate" aria-label="Elegir fecha">
+      <span id="headline" style="color:var(--muted);font-size:13px;margin-left:4px"></span>
+      <div class="langsw" id="langSw" role="group" aria-label="Idioma"></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero">
+      <article class="card mooncard fade" id="moonCard">
+        <div class="moonglow">
+          <svg class="moon" id="moonSvg" viewBox="-1.12 -1.12 2.24 2.24" role="img" data-i18n-aria="moonAria" aria-label="Fase lunar"></svg>
+        </div>
+        <div class="phasename" id="phaseName">—</div>
+        <div class="phasealt" id="phaseAlt">—</div>
+        <div class="kv">
+          <div class="kvi"><b id="illum">—</b><span data-i18n="illum">Iluminación</span></div>
+          <div class="kvi"><b id="age">—</b><span data-i18n="age">Edad lunar</span></div>
+        </div>
+      </article>
+
+      <article class="card fade" id="moonYearCard">
+        <p class="eyebrow"><span data-i18n="moonYear">Luna del año</span> · <span id="nsLabel">—</span></p>
+        <div class="bigdate">
+          <div>
+            <div class="moonnum">
+              <span class="n" id="moonNo">—</span>
+              <span class="of" data-i18n="of13">de 13 lunas</span>
+            </div>
+          </div>
+          <div style="text-align:right;min-width:150px">
+            <div class="moonname" id="moonName" style="font-size:20px">—</div>
+            <div class="totem" id="moonTotem">—</div>
+          </div>
+        </div>
+        <div class="tagrow" id="tags"></div>
+
+        <div class="meter">
+          <div class="lbl"><span id="dayLabel">—</span><span id="heptadLabel">—</span></div>
+          <div class="bar"><i id="moonBar" style="width:0%"></i></div>
+        </div>
+        <div class="meter">
+          <div class="lbl"><span data-i18n="yearMeter">Año de 13 lunas</span><span id="yearPct">—</span></div>
+          <div class="bar v"><i id="yearBar" style="width:0%"></i></div>
+        </div>
+      </article>
+    </section>
+
+    <!-- GRID 3 -->
+    <section class="grid3">
+      <article class="card fade" id="kinCard">
+        <p class="eyebrow" data-i18n="kinEyebrow">Firma galáctica · Kin</p>
+        <div class="kinhead">
+          <div class="glyphbox" id="glyph"></div>
+          <div>
+            <div class="k">Kin <span id="kinNo">—</span></div>
+            <div class="nm" id="kinName">—</div>
+            <div class="en" id="kinEn">—</div>
+          </div>
+        </div>
+        <div class="rows" id="kinRows"></div>
+        <div class="tzolkin" id="tzolkin" aria-hidden="true"></div>
+        <div class="tzlegend"><span data-i18n="harmonic">Módulo armónico 13:20</span><span id="kinPos">—</span></div>
+      </article>
+
+      <article class="card fade" id="zodiacCard">
+        <p class="eyebrow" data-i18n="zodiacEyebrow">Zodíaco · posición lunar</p>
+        <div class="zodiac">
+          <svg class="wheel" id="wheel" viewBox="0 0 200 200" role="img" data-i18n-aria="wheelAria" aria-label="Rueda zodiacal"></svg>
+          <div class="zinfo">
+            <div class="sign" id="signName">—</div>
+            <div class="deg" id="signDeg">—</div>
+            <div class="const" id="constName">—</div>
+          </div>
+        </div>
+        <div class="note" id="zodiacNote">—</div>
+      </article>
+
+      <article class="card fade" id="phaseCard">
+        <p class="eyebrow" data-i18n="phasesEyebrow">Ciclo sinódico · próximas fases</p>
+        <div class="plist" id="phaseList"></div>
+        <div class="note" id="synodicNote">—</div>
+      </article>
+    </section>
+
+    <!-- CALENDAR -->
+    <section class="card fade" id="calCard" style="margin-bottom:18px">
+      <div class="calhead">
+        <h2 id="calTitle">—</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase" data-i18n="calGreg">Gregoriano ↔ 13&nbsp;lunas</span>
+          <button class="btn icon" id="prevMonth" data-i18n-aria="prevMonth" aria-label="Mes anterior">‹</button>
+          <button class="btn icon" id="nextMonth" data-i18n-aria="nextMonth" aria-label="Mes siguiente">›</button>
+        </div>
+      </div>
+      <div class="dow" id="dow"></div>
+      <div class="days" id="days"></div>
+    </section>
+
+    <!-- YEAR -->
+    <section class="card fade" id="yearCard">
+      <div class="calhead">
+        <h2 id="yearTitle">—</h2>
+        <span id="yearBearer" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div class="yearstrip" id="yearStrip"></div>
+      <div class="ysl"><span id="stripStart">—</span><span id="stripEnd">—</span></div>
+      <div class="gtrack" id="gregTrack"></div>
+      <div class="glab"><span id="gregCap">—</span><span id="gregNow">—</span></div>
+    </section>
+  </main>
+
+  <footer>
+    <p data-i18n="footP"></p>
+    <details>
+      <summary data-i18n="footSum">Cómo se calcula cada dato</summary>
+      <p>
+        <span data-i18n="footD1"></span>
+        <span data-i18n="footD2"></span>
+        <span data-i18n="footD3"></span>
+        <span data-i18n="footD4"></span>
+      </p>
+    </details>
+    <p style="margin-top:12px;opacity:.7" data-i18n="footNote"></p>
+  </footer>
+</div>
+
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

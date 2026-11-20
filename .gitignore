@@ -1,0 +1,10 @@
+# salidas de la suite y del navegador headless
+tests/work/
+tests/profile/
+tests/shots/
+__pycache__/
+*.pyc
+
+# artefactos de depuración
+*.pgm
+*.tmp
