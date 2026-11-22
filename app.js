@@ -625,15 +625,15 @@ function renderYearStrip(ds) {
   for (let i = 0; i < 13; i++) {
     const mo = moonOf(i + 1);
     const cur = i + 1 === ds.moon;
-    // la misma raya que en la franja gregoriana, pero dentro de la luna:
+    // la misma raya que en la fila gregoriana, dentro de la luna:
     // (día de la luna − ½) / 28. En el día fuera del tiempo no hay luna,
     // así que tampoco hay raya en ninguna de las dos escalas.
     const mark = cur
       ? `<span class="ymark" style="left:${((ds.mday - 0.5) / 28 * 100).toFixed(2)}%"></span>`
       : '';
-    html += `<div class="ys${cur ? ' cur' : ''}" title="${mo.name} — ${mo.totem}">
-      ${mark}<div class="num">${i + 1}</div>
-      <div class="dd">${mo.short}</div>
+    html += `<div class="ycell${cur ? ' cur' : ''}" title="${mo.name} — ${mo.totem}">
+      ${mark}<span class="k">${i + 1}</span>
+      <span class="s">${mo.short}</span>
     </div>`;
   }
   $('yearStrip').innerHTML = html;
@@ -659,33 +659,33 @@ function renderGregTrack(ds, startYear) {
     segs.push({ i, n: n, d: dayAt(i) });
     i += n;
   }
+  // las mismas 13 columnas que la fila de las lunas, pero repartidas por días
+  // de cada mes: las dos suman 364, así que los dos ejes son comparables
+  $('gregTrack').style.gridTemplateColumns =
+    segs.map(s => `${s.n}fr`).join(' ');
   let html = '';
   for (const s of segs) {
-    const cur = date >= dayAt(s.i) && date < dayAt(s.i + s.n) ? ' cur' : '';
-    const short = fmtDate(s.d, { month: 'short' });
-    html += `<div class="gseg${cur}" style="left:${(s.i / YEAR_SPAN * 100).toFixed(3)}%;`
-         + `width:${(s.n / YEAR_SPAN * 100).toFixed(3)}%"`
+    const cur = date >= dayAt(s.i) && date < dayAt(s.i + s.n);
+    // la raya del día, igual que en la fila de las lunas: (día del año − ½) / 364.
+    // Con las celdas pegadas (sin hueco) cae exactamente en la misma x que la
+    // raya de la luna, y las dos se pueden leer en vertical.
+    const mark = cur
+      ? `<span class="ymark" style="left:${((ds.doy - s.i - 0.5) / s.n * 100).toFixed(2)}%"`
+        + ` title="${fmtLong(date)}"></span>`
+      : '';
+    html += `<div class="ycell${cur ? ' cur' : ''}"`
          + ` title="${fmtDate(s.d, { month: 'long', year: 'numeric' })}">`
-         + `<i data-narrow="${fmtDate(s.d, { month: 'narrow' })}">${short}</i></div>`;
-  }
-  // el día consultado: una raya que cruza la franja (el 25 de julio, día
-  // fuera del tiempo, cae fuera de los 364 días y no lleva marca)
-  if (!ds.isDoot) {
-    const pos = (ds.doy - 0.5) / YEAR_SPAN * 100;
-    html += `<span class="gcur" style="left:${pos.toFixed(3)}%" title="${fmtLong(date)}"></span>`;
+         + `${mark}<span class="k" data-narrow="${fmtDate(s.d, { month: 'narrow' })}">`
+         + `${fmtDate(s.d, { month: 'short' })}</span>`
+         + `<span class="s">${t('daysAbbr', { n: s.n })}</span></div>`;
   }
   $('gregTrack').innerHTML = html;
-  // el nombre del mes se adapta al hueco: «sept.» -> «S» -> sin etiqueta
-  [...$('gregTrack').querySelectorAll('.gseg')].forEach(el => {
-    const lab = el.firstElementChild;
-    if (lab.scrollWidth > el.clientWidth - 5) {
-      lab.textContent = lab.dataset.narrow;
-      el.classList.add('narrow');
-      if (lab.scrollWidth > el.clientWidth - 3) {
-        lab.style.display = 'none';
-        el.classList.add('nolabel');
-      }
-    }
+  // igual que la segunda línea de la luna: si no cabe, se acorta a la inicial;
+  // si tampoco cabe (el tramo de julio son 6 días), se oculta entera
+  [...$('gregTrack').querySelectorAll('.ycell .k')].forEach(lab => {
+    const cell = lab.parentElement;
+    if (lab.scrollWidth > cell.clientWidth - 2) lab.textContent = lab.dataset.narrow;
+    if (lab.scrollWidth > cell.clientWidth - 1) lab.style.visibility = 'hidden';
   });
   $('gregCap').textContent = t('gregTrack', { a: startYear, b: startYear + 1 });
   $('gregNow').textContent = fmtDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
@@ -809,20 +809,20 @@ if (new URLSearchParams(location.search).get('barcode') === 'layout') {
     Math.round(cards[0].width),
     Math.round(cards[2].left + cards[2].width),
     inRow,
-    document.querySelectorAll('#yearStrip .ys').length,
+    document.querySelectorAll('#yearStrip .ycell').length,
     document.querySelectorAll('#tzolkin div').length,
     Math.round(R('moonSvg').width),
     Math.round(R('wheel').width),
     Math.round(R('calCard').width),
     document.querySelectorAll('.day.today').length,
     overflows,
-    document.querySelectorAll('#gregTrack .gseg').length,
-    Math.round([...document.querySelectorAll('#gregTrack .gseg')]
+    document.querySelectorAll('#gregTrack .ycell').length,
+    Math.round([...document.querySelectorAll('#gregTrack .ycell')]
       .reduce((a, e) => a + e.getBoundingClientRect().width, 0) / R('gregTrack').width * 100),
-    document.querySelectorAll('#gregTrack .gcur').length,
-    document.querySelectorAll('#gregTrack .gseg.cur').length,
-    [...document.querySelectorAll('#gregTrack .gseg i')]
-      .filter(e => e.getBoundingClientRect().right > e.parentElement.getBoundingClientRect().right + 1).length,
+    document.querySelectorAll('#gregTrack .ymark').length,
+    document.querySelectorAll('#gregTrack .ycell.cur').length,
+    [...document.querySelectorAll('#gregTrack .ycell .k')]
+      .filter(e => e.scrollWidth > e.clientWidth + 1).length,
     Math.round(R('gregTrack').left),
     Math.round(R('gregTrack').width),
     document.querySelectorAll('#yearStrip .ymark').length,
@@ -831,6 +831,15 @@ if (new URLSearchParams(location.search).get('barcode') === 'layout') {
       if (!m) return 0;
       const c = m.parentElement.getBoundingClientRect(), r = m.getBoundingClientRect();
       return Math.round((r.left + r.width / 2 - c.left) / c.width * 100);
+    })(),
+    // las dos rayas, en la misma x: si esto deja de dar 0–1 px, las dos
+    // escalas han dejado de ser comparables en vertical
+    (() => {
+      const a = document.querySelector('#yearStrip .ymark');
+      const b = document.querySelector('#gregTrack .ymark');
+      if (!a || !b) return 999;
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      return Math.round(Math.abs((ra.left + ra.width / 2) - (rb.left + rb.width / 2)));
     })()
   ];
   const bits = 14, cw = 16;
@@ -857,24 +866,27 @@ if (new URLSearchParams(location.search).has('rects')) {
     const r = el.getBoundingClientRect();
     console.log(`rect ${id} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
   });
-  [...document.querySelectorAll('#gregTrack .gseg')].forEach((el, i) => {
+  [...document.querySelectorAll('#gregTrack .ycell')].forEach((el, i) => {
     const r = el.getBoundingClientRect();
-    console.log(`rect gseg${i} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
-    const lab = el.firstElementChild;
-    console.log(`label gseg${i} "${lab.textContent}" ${lab.style.display === 'none' ? 'oculta' : 'visible'}`
+    console.log(`rect gcell${i} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
+    const lab = el.querySelector('.k');
+    const oculta = lab.style.visibility === 'hidden';
+    console.log(`label gcell${i} "${lab.textContent}"`
+      + ` ${oculta ? 'oculta' : (lab.scrollWidth > el.clientWidth ? 'recortada' : 'entera')}`
       + ` ${Math.round(lab.scrollWidth)}/${el.clientWidth}`);
   });
-  const cur = document.querySelector('#gregTrack .gcur');
-  if (cur) {
-    const r = cur.getBoundingClientRect();
-    console.log(`rect gcur ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
-  }
-  const ym = document.querySelector('#yearStrip .ymark');
-  if (ym) {
-    const r = ym.getBoundingClientRect(), c = ym.parentElement.getBoundingClientRect();
-    console.log(`rect ymark ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`
+  [...document.querySelectorAll('#yearStrip .ycell')].forEach((el, i) => {
+    const r = el.getBoundingClientRect();
+    console.log(`rect ycell${i} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
+  });
+  // las dos rayas con su celda, para poder comparar las dos escalas
+  [['ymark', '#yearStrip'], ['gmark', '#gregTrack']].forEach(([name, sel]) => {
+    const m = document.querySelector(sel + ' .ymark');
+    if (!m) return;
+    const r = m.getBoundingClientRect(), c = m.parentElement.getBoundingClientRect();
+    console.log(`rect ${name} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`
       + ` cell ${Math.round(c.left)} ${Math.round(c.width)}`);
-  }
+  });
 }
 
 // volcado de texto para revisar la traducción: index.html?dump=1&lang=de

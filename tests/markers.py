@@ -12,17 +12,20 @@ os.makedirs(WORK, exist_ok=True)
 for DATE in sys.argv[1:] or ['2026-07-25', '2026-07-26', '2026-11-01', '2027-02-15']:
     out = browser('file://%s/index.html?rects=1&lang=es&d=%s' % (BASE, DATE),
                   os.path.join(WORK, '_rects.png'), 1280, 2900, capture=True)
-    gcur = ymark = None
+    marks = {}
     for line in out.splitlines():
-        m = re.match(r'console\.log: "rect gcur (\S+)', line)
+        m = re.match(r'console\.log: "rect (ymark|gmark) (\S+) \S+ \S+ \S+ cell (\S+) (\S+)"', line)
         if m:
-            gcur = int(m.group(1))
-        m = re.match(r'console\.log: "rect ymark (\S+) \S+ \S+ \S+ cell (\S+) (\S+)"', line)
-        if m:
-            ymark = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    if ymark:
-        moon = 'raya en la luna al %.1f%% de la celda' % ((ymark[0] - ymark[1] + 1) / ymark[2] * 100)
-    else:
-        moon = 'sin raya en la luna'
-    print('%-12s gregoriana: %-8s · %s'
-          % (DATE, ('x=%d' % gcur) if gcur is not None else 'sin raya', moon))
+            marks[m.group(1)] = (int(m.group(2)), int(m.group(3)), int(m.group(4)))
+    if not marks:
+        print('%-12s sin rayas (¿día fuera del tiempo?)' % DATE)
+        continue
+    # el día 365 no pertenece a ninguna luna ni a ningún mes del año lunar
+    y, gm = marks.get('ymark'), marks.get('gmark')
+    if not (y and gm):
+        print('%-12s sólo una raya: %s' % (DATE, sorted(marks)))
+        continue
+    delta = abs(y[0] - gm[0])
+    print('%-12s luna x=%-4d (%4.1f%% de su celda) · gregoriana x=%-4d · desfase %d px %s'
+          % (DATE, y[0], (y[0] - y[1] + 1) / y[2] * 100, gm[0], delta,
+             'OK' if delta <= 1 else 'DESALINEADO'))

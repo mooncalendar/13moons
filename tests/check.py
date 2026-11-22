@@ -48,7 +48,7 @@ LAYOUT_NAMES = ['innerWidth', 'scrollWidth', 'scrollHeight', 'hero1.w', 'hero2.w
                 'hero2.left', 'card1.w', 'card3.right', 'days/row', 'yearStrip',
                 'tzolkin', 'moonSvg.w', 'wheel.w', 'calCard.w', 'today', 'overflows',
                 'gregSegs', 'gregWidth%', 'gregMarker', 'gregCur', 'gregLabelOut',
-                'greg.left', 'greg.w', 'ymoonMark', 'ymoonPos%']
+                'greg.left', 'greg.w', 'ymoonMark', 'ymoonPos%', 'markDelta']
 
 
 # --- utilidades ------------------------------------------------------------
@@ -215,6 +215,9 @@ def test_layout(langs):
                 bad.append('rayas en la tira de las lunas: %d' % g['ymoonMark'])
             if abs(g['ymoonPos%'] - 52) > 3:
                 bad.append('raya de la luna al %d%% (esperado 52%%)' % g['ymoonPos%'])
+            # las dos escalas, comparables en vertical: misma x (±1 px)
+            if g['markDelta'] > 1:
+                bad.append('las dos rayas no coinciden: %d px de desfase' % g['markDelta'])
             for b in bad:
                 print('  FAIL [%s/%s] %s' % (lang, tag, b))
             fails += bool(bad)
