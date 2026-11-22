@@ -18,8 +18,8 @@ Available in **Spanish, Português (BR), English and Deutsch**.
 
 ## The year in two calendars
 
-At the bottom of the page a card stacks the 13-moon year and the civil year so
-they can be read vertically:
+Right under the moon of the year, a card stacks the 13-moon year and the civil
+year so they can be read vertically, and the month calendar follows it:
 
 ```
        moon 4 · day 15                      20 Nov 2026

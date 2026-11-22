@@ -408,6 +408,20 @@
       </details>
     </section>
 
+    <!-- CALENDAR · right under the 13-moon year, so the two calendars read together -->
+    <section class="card fade" id="calCard" style="margin-bottom:18px">
+      <div class="calhead">
+        <h2 id="calTitle">—</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="font-size:11px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase" data-i18n="calGreg">Gregoriano ↔ 13&nbsp;lunas</span>
+          <button class="btn icon" id="prevMonth" data-i18n-aria="prevMonth" aria-label="Mes anterior">‹</button>
+          <button class="btn icon" id="nextMonth" data-i18n-aria="nextMonth" aria-label="Mes siguiente">›</button>
+        </div>
+      </div>
+      <div class="dow" id="dow"></div>
+      <div class="days" id="days"></div>
+    </section>
+
     <!-- GRID 3 · phases, zodiac, signature -->
     <section class="grid3">
       <article class="card fade" id="phaseCard">
@@ -442,21 +456,6 @@
         <div class="tzlegend"><span data-i18n="harmonic">Módulo armónico 13:20</span><span id="kinPos">—</span></div>
       </article>
     </section>
-
-    <!-- CALENDAR -->
-    <section class="card fade" id="calCard" style="margin-bottom:18px">
-      <div class="calhead">
-        <h2 id="calTitle">—</h2>
-        <div style="display:flex;gap:8px;align-items:center">
-          <span style="font-size:11px;color:var(--muted2);letter-spacing:.1em;text-transform:uppercase" data-i18n="calGreg">Gregoriano ↔ 13&nbsp;lunas</span>
-          <button class="btn icon" id="prevMonth" data-i18n-aria="prevMonth" aria-label="Mes anterior">‹</button>
-          <button class="btn icon" id="nextMonth" data-i18n-aria="nextMonth" aria-label="Mes siguiente">›</button>
-        </div>
-      </div>
-      <div class="dow" id="dow"></div>
-      <div class="days" id="days"></div>
-    </section>
-
   </main>
 
   <footer>
