@@ -198,6 +198,8 @@ headless real (no hay navegador simulado: los valores se leen de la captura):
 python3 tests/check.py            # datos + maquetación + autotest, en es/pt/en/de
 python3 tests/check.py --shots    # además capturas de página completa en tests/shots/
 python3 tests/check.py -l de      # un idioma suelto
+python3 tests/check.py --only doot   # el desplegable del día fuera del tiempo
+python3 tests/check.py --only thumb  # la miniatura de la pestaña, contada en píxeles
 ```
 
 Y las sondas sueltas, para mirar un detalle concreto:

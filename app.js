@@ -353,6 +353,35 @@ function miniMoonSVG(k, waxing, size = 17) {
     <path d="${moonPath(k, waxing)}" fill="#ece2c8"/></svg>`;
 }
 
+/* ---------------------------------- tab icon */
+// The thumbnail shows the moon of the day being viewed, built with the same
+// `moonPath()` as the big disc. If anything throws, the href is left alone and
+// the static last-quarter icon from index.html stays.
+const FALLBACK_ICON = (() => {
+  const link = document.querySelector('link[rel="icon"]');
+  return link ? link.getAttribute('href') : '';
+})();
+
+function faviconSVG(k, waxing) {
+  return "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+    + "<circle cx='16' cy='16' r='15' fill='#090a12'/>"
+    + "<g transform='translate(16 16) scale(13)'>"
+    + "<circle r='1' fill='#252a42'/>"
+    + "<path d='" + moonPath(k, waxing) + "' fill='#f0e4c6'/></g>"
+    + "<circle cx='16' cy='16' r='14.2' fill='none'"
+    + " stroke='#e5c07b' stroke-opacity='.5'/></svg>";
+}
+
+function setFavicon(k, waxing) {
+  try {
+    const link = $('favicon');
+    if (!link) return;
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(faviconSVG(k, waxing));
+  } catch (e) {
+    /* keep the fallback: last quarter */
+  }
+}
+
 /* ---------------------------------- formato (Intl) */
 function fmtLong(d) {
   return fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -382,6 +411,7 @@ function render() {
   const isToday = sameDay(d, new Date());
   const ms = isToday ? Date.now() : new Date(y, m - 1, day, 12, 0, 0).getTime();
   const st = moonState(ms);
+  setFavicon(st.illum, st.waxing);
 
   /* ---------- cabecera ---------- */
   $('headline').textContent =
@@ -896,7 +926,21 @@ if (new URLSearchParams(location.search).has('rects')) {
   });
 }
 
-// el desplegable del día fuera del tiempo, abierto y medido: index.html?doot=1
+// the thumbnail at 240x240 on white, so it can be counted in pixels: index.html?thumb=1
+if (new URLSearchParams(location.search).has('thumb')) {
+  const modo = new URLSearchParams(location.search).get('thumb');
+  const src = modo === 'fallback' ? FALLBACK_ICON
+    : document.querySelector('link[rel="icon"]').getAttribute('href');
+  const svg = decodeURIComponent(src.replace('data:image/svg+xml,', ''))
+    .replace('<svg ', "<svg width='240' height='240' ");
+  const st = moonState(state.date.getTime());
+  document.body.innerHTML = '';
+  document.body.style.cssText = 'margin:0;padding:0;background:#fff;width:240px;height:240px';
+  document.body.innerHTML = svg;
+  console.log(`thumb modo=${modo} k=${st.illum.toFixed(4)} waxing=${st.waxing ? 1 : 0}`);
+}
+
+// the day-out-of-time disclosure, opened and measured: index.html?doot=1
 if (new URLSearchParams(location.search).has('doot')) {
   const dd = $('dootDetails');
   const cerrado = dd.getBoundingClientRect().height;

@@ -350,12 +350,95 @@ def test_doot(langs):
     return fallos
 
 
+def test_thumb(langs):
+    """Which moon does the thumbnail show? Count it in the image, don't assume.
+
+    For each date the icon is painted at 240x240 on white and the inside of the
+    disc is classified by luminance: the lit fraction has to match what the app
+    reports, and the lit side has to fall on the right while waxing and on the
+    left while waning. The `fallback` case uses the static href from
+    index.html: a last-quarter moon, left half lit.
+    """
+    def medir(png):
+        w, h, ch, px = read_png(png)
+        cx, cy = w / 2.0, h / 2.0
+        r_disco = 13 * (w / 32.0)          # 97.5 px at 240
+        r_max = r_disco * 0.97             # nearly to the edge, past the rim
+        claro = oscuro = 0
+        xs = []
+        for y in range(h):
+            dy = y - cy
+            if abs(dy) > r_max:
+                continue
+            for x in range(w):
+                dx = x - cx
+                if dx * dx + dy * dy > r_max * r_max:
+                    continue
+                i = (y * w + x) * ch
+                r, g, b = px[i], px[i + 1], px[i + 2]
+                if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5:
+                    claro += 1
+                    xs.append(x)
+                else:
+                    oscuro += 1
+        total = claro + oscuro
+        lado = (sum(xs) / len(xs) - cx) / r_disco if xs else 0.0
+        return (claro / total if total else 0.0), lado
+
+    CASOS = [('2026-11-05', 'thin waxing'), ('2026-11-20', 'waxing'),
+             ('2026-11-24', 'full'), ('2026-12-01', 'waning'),
+             ('2026-11-11', 'new')]
+    fallos = 0
+    print('     date         phase           k app  k seen   side')
+    for lang in langs[:1]:
+        for d, nombre in CASOS:
+            png = os.path.join(WORK, 'thumb_%s.png' % d)
+            out = browser('%s/index.html?thumb=1&lang=%s&d=%s' % (URL_BASE, lang, d),
+                          png, 240, 240, capture=True)
+            m = re.search(r'k=([\d.]+) waxing=(\d)', out)
+            if not m:
+                print('FAIL thumb      %-12s no probe output' % d)
+                fallos += 1
+                continue
+            k_app, waxing = float(m.group(1)), int(m.group(2))
+            k_med, lado = medir(png)
+            mal = []
+            if abs(k_med - k_app) > 0.08:
+                mal.append('lit %.2f vs %.2f' % (k_med, k_app))
+            if 0.20 < k_app < 0.80:
+                if waxing and lado < 0.1:
+                    mal.append('waxing but lit on the left')
+                if not waxing and lado > -0.1:
+                    mal.append('waning but lit on the right')
+            fallos += bool(mal)
+            print('%s thumb      %-12s %-14s %.3f  %.3f    %+.2f  %s'
+                  % ('OK  ' if not mal else 'FAIL', d, nombre, k_app, k_med, lado,
+                     'thumbnail matches' if not mal else ' · '.join(mal)))
+
+    # the static fallback: last quarter, left half lit
+    png = os.path.join(WORK, 'thumb_fallback.png')
+    browser('%s/index.html?thumb=fallback&lang=%s&d=2026-11-20' % (URL_BASE, langs[0]),
+            png, 240, 240, capture=True)
+    k_med, lado = medir(png)
+    mal = []
+    if abs(k_med - 0.5) > 0.06:
+        mal.append('not a half moon (%.2f)' % k_med)
+    if lado > -0.15:
+        mal.append('lit on the wrong side')
+    fallos += bool(mal)
+    print('%s thumb      %-12s %-14s %.3f  %.3f    %+.2f  %s'
+          % ('OK  ' if not mal else 'FAIL', '(no JS)', 'fallback', 0.5, k_med, lado,
+             'last quarter' if not mal else ' · '.join(mal)))
+    return fallos
+
+
 def main():
     ap = argparse.ArgumentParser(description='Pruebas de moon-calendar')
     ap.add_argument('-l', '--langs', default=','.join(LANGS),
                     help='idiomas separados por coma (por defecto: %s)' % ','.join(LANGS))
     ap.add_argument('--shots', action='store_true', help='capturas de página completa')
-    ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot', 'shots'],
+    ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot',
+                                       'thumb', 'shots'],
                     help='ejecutar sólo un grupo de pruebas')
     ap.add_argument('--base',
                     help='URL donde se sirve la app (por defecto: este directorio, '
@@ -371,7 +454,7 @@ def main():
     os.makedirs(WORK, exist_ok=True)
     suites = [('data', test_data), ('layout', test_layout),
               ('selftest', test_selftest), ('doot', test_doot),
-              ('shots', test_shots)]
+              ('thumb', test_thumb), ('shots', test_shots)]
     if args.only:
         groups = [s for s in suites if s[0] == args.only]
     else:
