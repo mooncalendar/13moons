@@ -92,10 +92,19 @@ The tab icon is drawn, not an image: the 13-segment gold ring counts the moons
 of the year, the disc shows the moon of the day being viewed (same `moonPath()`
 as the big disc, so it waxes and wanes with the date) and the craters are
 clipped to the lit face, so they only appear on the side the Sun is hitting.
+
 The static copy in `index.html` is what the browser shows before the script
-runs; `tests/check.py --only favicon` renders both at 512 px and counts the
-ring segments and the crater pixels, with the crater group stripped as a
-control.
+runs, so it cannot come from `faviconSVG()`; it is generated instead of edited:
+
+```
+python3 tests/tools/favicon_gen.py --write   # rewrite the href from the geometry
+python3 tests/tools/favicon_sizes.py         # ring warmth and phase contrast at 16/32/64 px
+```
+
+The crater list appears twice — in `index.html` (it has to be there before the
+script runs) and as `ICON_CRATERS` in `app.js`. `tests/check.py --only favicon`
+renders both at 512 px and counts what is in the pixels, with the crater group
+stripped as a control, so the two copies cannot drift apart unnoticed.
 
 ## Publishing
 
@@ -270,7 +279,7 @@ tests/
   shot_mobile.py  screenshot at 390 px wide
   doot.py         shortcut for --only doot
   thumb.py        shortcut for --only thumb
-  tools/          ASCII dump of screenshots and ink count per segment
+  tools/          ASCII dump, ink count per segment, icon generator and sizes
 docs/research/    Python validation prototypes (design phase)
 ```
 
