@@ -15,6 +15,7 @@ Salida: código 0 si todo pasa, 1 si algo falla.
 import argparse
 import ast
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -294,12 +295,67 @@ def test_shots(langs):
     return fails
 
 
+def test_doot(langs):
+    """El desplegable del día fuera del tiempo, en cada idioma y en los dos anchos.
+
+    Sin red: comprueba que exista, que se abra, que traiga los cuatro párrafos y
+    las cuatro fuentes, que los enlaces sean https con rel="noopener", que no
+    desborde y que el texto venga traducido (no el respaldo en español).
+    """
+    # marcas sin acentos: la consola de Firefox escapa lo que no es ASCII
+    MARCA = {'es': 'fuera del tiempo', 'pt': 'fora do tempo',
+             'en': 'out of time', 'de': 'Zeit'}
+    fallos = 0
+    for lang in langs:
+        for w, h, tag in [(1280, 3200, 'desk'), (390, 4400, 'mob')]:
+            png = os.path.join(WORK, 'doot_%s_%s.png' % (lang, tag))
+            out = browser('%s/index.html?doot=1&lang=%s&d=2026-11-01' % (URL_BASE, lang),
+                          png, w, h, capture=True)
+            linea = next((l for l in out.splitlines() if 'doot open=' in l), '')
+            m = re.search(r'p=(\d+) a=(\d+)', linea)
+            m2 = re.search(r'doot desbordes=(\d+) scrollW=(\d+) innerW=(\d+)', out)
+            texto = next((l for l in out.splitlines() if 'doot texto:' in l), '')
+            enlaces = [(hh, rr, tt.strip('"').strip('\\'))
+                       for hh, rr, tt in re.findall(
+                           r'doot link (\S+) rel=(\S+) target=(\S+)', out)]
+
+            mal = []
+            if not m or m.group(1) != '4' or m.group(2) != '4':
+                mal.append('párrafos/enlaces %s' % (m.groups() if m else 'sin sonda'))
+            if not m2:
+                mal.append('sin medidas')
+            else:
+                desbordes, sw, iw = (int(x) for x in m2.groups())
+                if desbordes:
+                    mal.append('%d cajas desbordadas' % desbordes)
+                if sw > iw + 1:
+                    mal.append('scroll horizontal %d > %d' % (sw, iw))
+            if len(enlaces) != 4:
+                mal.append('%d enlaces leídos' % len(enlaces))
+            for href, rel, target in enlaces:
+                if not href.startswith('https://'):
+                    mal.append('enlace no https: %s' % href)
+                if rel != 'noopener':
+                    mal.append('rel=%s en %s' % (rel, href))
+                if target != '_blank':
+                    mal.append('target=%s en %s' % (target, href))
+            if MARCA.get(lang, 'fuera del tiempo').lower() not in texto.lower():
+                mal.append('texto no traducido')
+
+            fallos += bool(mal)
+            print('%s doot       %-2s %-4s %s'
+                  % ('OK  ' if not mal else 'FAIL', lang, tag,
+                     '4 párrafos · 4 fuentes https+noopener · sin desbordes'
+                     if not mal else ' · '.join(mal)))
+    return fallos
+
+
 def main():
     ap = argparse.ArgumentParser(description='Pruebas de moon-calendar')
     ap.add_argument('-l', '--langs', default=','.join(LANGS),
                     help='idiomas separados por coma (por defecto: %s)' % ','.join(LANGS))
     ap.add_argument('--shots', action='store_true', help='capturas de página completa')
-    ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'shots'],
+    ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot', 'shots'],
                     help='ejecutar sólo un grupo de pruebas')
     ap.add_argument('--base',
                     help='URL donde se sirve la app (por defecto: este directorio, '
@@ -314,7 +370,8 @@ def main():
     langs = [l.strip() for l in args.langs.split(',') if l.strip()]
     os.makedirs(WORK, exist_ok=True)
     suites = [('data', test_data), ('layout', test_layout),
-              ('selftest', test_selftest), ('shots', test_shots)]
+              ('selftest', test_selftest), ('doot', test_doot),
+              ('shots', test_shots)]
     if args.only:
         groups = [s for s in suites if s[0] == args.only]
     else:

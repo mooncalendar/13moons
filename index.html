@@ -277,6 +277,9 @@
     .ycell .s{display:none}
     #gregTrack .ycell .k{font-size:8.5px;letter-spacing:.02em}
   }
+  /* el rótulo del 25 de julio abre el desplegable de abajo */
+  #stripEnd{cursor:pointer;border-bottom:1px dotted rgba(229,192,123,.4)}
+  #stripEnd:hover{color:var(--gold);border-bottom-color:var(--gold)}
   .ysl,.glab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;
              gap:6px 10px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
              color:var(--muted2)}
@@ -286,6 +289,26 @@
   @media (max-width:520px){
     .ysl,.glab{font-size:9.5px;letter-spacing:.1em}
   }
+
+  /* explicación desplegable del día fuera del tiempo */
+  .dootx{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+  .dootx summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px;
+                 padding:7px 0;
+                 font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+                 color:var(--muted)}
+  .dootx summary::-webkit-details-marker{display:none}
+  .dootx summary::before{content:'';width:6px;height:6px;flex:0 0 auto;
+                         border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;
+                         transform:rotate(-45deg);transition:transform .2s}
+  .dootx[open] summary::before{transform:rotate(45deg)}
+  .dootx summary:hover{color:var(--text)}
+  .dootx p{margin:10px 0 0;font-size:12px;line-height:1.7;color:var(--muted);max-width:80ch}
+  .dootx p b{color:var(--text);font-weight:550}
+  .dootx .src{margin-top:12px;font-size:11px;color:var(--muted2);line-height:1.9}
+  .dootx .src a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+  .dootx .src a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+  .dootx .src em{font-style:normal;letter-spacing:.14em;text-transform:uppercase;margin-right:6px}
+  @media (prefers-reduced-motion:reduce){.dootx summary::before{transition:none}}
 
   /* footer */
   footer{margin-top:26px;color:var(--muted2);font-size:11.5px;line-height:1.7}
@@ -377,6 +400,13 @@
       <div class="ysl"><span id="stripStart">—</span><span id="stripEnd">—</span></div>
       <div class="yscale" id="gregTrack"></div>
       <div class="glab"><span id="gregCap">—</span><span id="gregNow">—</span></div>
+      <details class="dootx" id="dootDetails">
+        <summary data-i18n="dootSum">Día fuera del tiempo · 25 de julio</summary>
+        <p data-i18n="dootX1"></p>
+        <p data-i18n="dootX2"></p>
+        <p data-i18n="dootX3"></p>
+        <p class="src" data-i18n="dootSrc"></p>
+      </details>
     </section>
 
     <!-- GRID 3 · fases, zodíaco, firma -->

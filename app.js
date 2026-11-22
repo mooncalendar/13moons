@@ -639,7 +639,14 @@ function renderYearStrip(ds) {
   $('yearStrip').innerHTML = html;
   const short = x => fmtDate(new Date(2000, 6, x), { day: 'numeric', month: 'short' });
   $('stripStart').textContent = short(26);
-  $('stripEnd').textContent = `${t('dootName')} · ${short(25)}`;
+  const fin = $('stripEnd');
+  fin.textContent = `${t('dootName')} · ${short(25)}`;
+  fin.title = t('dootOpenHint');
+  fin.onclick = () => {
+    const dd = $('dootDetails');
+    dd.open = true;
+    dd.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
 }
 
 /* ------ franja gregoriana paralela: los mismos 364 días, mes a mes ------ */
@@ -887,6 +894,27 @@ if (new URLSearchParams(location.search).has('rects')) {
     console.log(`rect ${name} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`
       + ` cell ${Math.round(c.left)} ${Math.round(c.width)}`);
   });
+}
+
+// el desplegable del día fuera del tiempo, abierto y medido: index.html?doot=1
+if (new URLSearchParams(location.search).has('doot')) {
+  const dd = $('dootDetails');
+  const cerrado = dd.getBoundingClientRect().height;
+  dd.open = true;
+  const r = dd.getBoundingClientRect();
+  const sm = dd.querySelector('summary').getBoundingClientRect();
+  console.log(`doot cerrado=${Math.round(cerrado)} summary=${Math.round(sm.height)}`
+    + `x${Math.round(sm.width)}`);
+  const enlaces = [...dd.querySelectorAll('a')];
+  const desbordes = [...dd.querySelectorAll('*')]
+    .filter(e => e.clientWidth > 0 && e.scrollWidth > e.clientWidth + 2).length;
+  console.log(`doot open=${dd.open} y=${Math.round(r.top)} h=${Math.round(r.height)}`
+    + ` w=${Math.round(r.width)} p=${dd.querySelectorAll('p').length} a=${enlaces.length}`);
+  console.log(`doot desbordes=${desbordes} scrollW=${document.documentElement.scrollWidth}`
+    + ` innerW=${window.innerWidth}`);
+  enlaces.forEach(a => console.log('doot link ' + a.getAttribute('href')
+    + ' rel=' + a.getAttribute('rel') + ' target=' + a.getAttribute('target')));
+  console.log('doot texto: ' + dd.textContent.replace(/\s+/g, ' ').trim());
 }
 
 // volcado de texto para revisar la traducción: index.html?dump=1&lang=de
