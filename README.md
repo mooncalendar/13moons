@@ -124,6 +124,15 @@ to propagate, it retries for a minute before giving up.
 | Castle | 5 castles of 52 days |
 | Guide | Per-tone table from the tutorial (same colour as the seal) |
 
+The kin card closes with the **harmonic module** (`13 × 20 = 260` cells, the
+tzolkin round): one cell per kin, 20 consecutive days per column, the seal
+fixed per row and the tone advancing one step per cell — since 13 does not
+divide 20 the tone cycle drifts seven rows per column, which is the diagonal
+you see. The cell of the current kin carries an outline and the counter reads
+`kin/260`. The disclosure under the grid explains what the grid is and what
+the module means, including where the arithmetic ends and the modern
+(Dreamspell) reading begins.
+
 Checked against an independent Dreamspell calculator (starroot.com, CGI):
 
 | Date | Expected | Result |
