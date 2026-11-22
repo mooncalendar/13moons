@@ -358,8 +358,37 @@
       </article>
     </section>
 
-    <!-- GRID 3 -->
+    <!-- YEAR · el año de 13 lunas, justo debajo de la luna del año -->
+    <section class="card fade" id="yearCard" style="margin-bottom:18px">
+      <div class="calhead">
+        <h2 id="yearTitle">—</h2>
+        <span id="yearBearer" style="font-size:12px;color:var(--muted)"></span>
+      </div>
+      <div class="yearstrip" id="yearStrip"></div>
+      <div class="ysl"><span id="stripStart">—</span><span id="stripEnd">—</span></div>
+      <div class="gtrack" id="gregTrack"></div>
+      <div class="glab"><span id="gregCap">—</span><span id="gregNow">—</span></div>
+    </section>
+
+    <!-- GRID 3 · fases, zodíaco, firma -->
     <section class="grid3">
+      <article class="card fade" id="phaseCard">
+        <p class="eyebrow" data-i18n="phasesEyebrow">Ciclo sinódico · próximas fases</p>
+        <div class="plist" id="phaseList"></div>
+        <div class="note" id="synodicNote">—</div>
+      </article>
+      <article class="card fade" id="zodiacCard">
+        <p class="eyebrow" data-i18n="zodiacEyebrow">Zodíaco · posición lunar</p>
+        <div class="zodiac">
+          <svg class="wheel" id="wheel" viewBox="0 0 200 200" role="img" data-i18n-aria="wheelAria" aria-label="Rueda zodiacal"></svg>
+          <div class="zinfo">
+            <div class="sign" id="signName">—</div>
+            <div class="deg" id="signDeg">—</div>
+            <div class="const" id="constName">—</div>
+          </div>
+        </div>
+        <div class="note" id="zodiacNote">—</div>
+      </article>
       <article class="card fade" id="kinCard">
         <p class="eyebrow" data-i18n="kinEyebrow">Firma galáctica · Kin</p>
         <div class="kinhead">
@@ -373,25 +402,6 @@
         <div class="rows" id="kinRows"></div>
         <div class="tzolkin" id="tzolkin" aria-hidden="true"></div>
         <div class="tzlegend"><span data-i18n="harmonic">Módulo armónico 13:20</span><span id="kinPos">—</span></div>
-      </article>
-
-      <article class="card fade" id="zodiacCard">
-        <p class="eyebrow" data-i18n="zodiacEyebrow">Zodíaco · posición lunar</p>
-        <div class="zodiac">
-          <svg class="wheel" id="wheel" viewBox="0 0 200 200" role="img" data-i18n-aria="wheelAria" aria-label="Rueda zodiacal"></svg>
-          <div class="zinfo">
-            <div class="sign" id="signName">—</div>
-            <div class="deg" id="signDeg">—</div>
-            <div class="const" id="constName">—</div>
-          </div>
-        </div>
-        <div class="note" id="zodiacNote">—</div>
-      </article>
-
-      <article class="card fade" id="phaseCard">
-        <p class="eyebrow" data-i18n="phasesEyebrow">Ciclo sinódico · próximas fases</p>
-        <div class="plist" id="phaseList"></div>
-        <div class="note" id="synodicNote">—</div>
       </article>
     </section>
 
@@ -409,17 +419,7 @@
       <div class="days" id="days"></div>
     </section>
 
-    <!-- YEAR -->
-    <section class="card fade" id="yearCard">
-      <div class="calhead">
-        <h2 id="yearTitle">—</h2>
-        <span id="yearBearer" style="font-size:12px;color:var(--muted)"></span>
-      </div>
-      <div class="yearstrip" id="yearStrip"></div>
-      <div class="ysl"><span id="stripStart">—</span><span id="stripEnd">—</span></div>
-      <div class="gtrack" id="gregTrack"></div>
-      <div class="glab"><span id="gregCap">—</span><span id="gregNow">—</span></div>
-    </section>
+
   </main>
 
   <footer>
