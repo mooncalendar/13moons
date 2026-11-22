@@ -1,18 +1,18 @@
 /* ============================================================
-   Sincronario de las 13 Lunas — motor de cálculo + render
-   Sin dependencias. Astronomía: series de Meeus (47/48/25).
-   Calendario: Dreamspell (Argüelles), anclado y verificado.
+   Sincronario de las 13 Lunas — calculation engine + render
+   No dependencies. Astronomy: Meeus series (47/48/25).
+   Calendar: Dreamspell (Argüelles), anchored and verified.
    ============================================================ */
 'use strict';
 
-/* ---------------------------------- utilidades */
+/* ---------------------------------- utilities */
 const RAD = Math.PI / 180;
 const pad2 = n => String(n).padStart(2, '0');
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-/* ---------------------------------- estructura (independiente del idioma) */
-// Los nombres traducidos viven en i18n.js; aquí solo índices y geometría.
+/* ---------------------------------- structure (language independent) */
+// Translated names live in i18n.js; here only indices and geometry.
 const CONST_LIMITS = [29.08, 53.47, 90.40, 117.43, 138.02, 173.93,
   217.80, 241.05, 247.79, 266.61, 299.71, 327.58, 351.57];
 const SIGN_GLYPHS = ['\u2648','\u2649','\u264A','\u264B','\u264C','\u264D',
@@ -33,19 +33,19 @@ function sigName(seal, tone) {
   const s = sealOf(seal), tn = toneOf(tone);
   const g = loc.gender ? loc.gender[seal - 1] : 'm';
 
-  // alemán: adjetivos delante del sustantivo y declinados
+  // German: adjectives before the noun, declined
   if (loc.adjTones) {
     const end = g === 'f' ? 'e' : g === 'n' ? 'es' : 'er';
     return `${cap(loc.adjColors[s.color] + end)} ${cap(loc.adjTones[tone - 1] + end)} ${s.name}`;
   }
-  // es/pt: el adjetivo va detrás y concuerda en -o / -a
+  // es/pt: the adjective follows and agrees in -o / -a
   const agree = w => (g === 'f' && /o$/.test(w)) ? w.slice(0, -1) + 'a' : w;
   const c = agree(loc.colors[s.color]);
   const tnm = agree(tn.name);
   return loc.sigOrder === 'cts' ? `${c} ${tnm} ${s.name}` : `${s.name} ${tnm} ${c}`;
 }
 
-/* ---------------------------------- astronomía */
+/* ---------------------------------- astronomy */
 function deltaTsec(year) {
   const t = year - 2000;
   return clamp(62.92 + 0.32217 * t + 0.005589 * t * t, 40, 200);
@@ -104,7 +104,7 @@ function sunLon(jdUT) {
   return ((L0 + C - 0.00569 - 0.00478*Math.sin(om*RAD)) % 360 + 360) % 360;
 }
 
-// elongación Luna–Sol en longitud (0 = nueva, 180 = llena)
+// Moon–Sun elongation in longitude (0 = new, 180 = full)
 function elongation(jdUT) {
   return ((moonPos(jdUT).lon - sunLon(jdUT)) % 360 + 360) % 360;
 }
@@ -114,12 +114,12 @@ function moonState(ms) {
   const { lon, lat } = moonPos(jd);
   const elong = elongation(jd);
   const cosPsi = Math.cos(lat * RAD) * Math.cos(elong * RAD);
-  const psi = Math.acos(clamp(cosPsi, -1, 1)) / RAD;     // elongación real
-  const illum = (1 - Math.cos(psi * RAD)) / 2;            // fracción iluminada
+  const psi = Math.acos(clamp(cosPsi, -1, 1)) / RAD;     // true elongation
+  const illum = (1 - Math.cos(psi * RAD)) / 2;            // illuminated fraction
   const age = elong / 360 * 29.530588853;
   return {
     lon, lat, elong, illum, age,
-    waxing: elong < 180,          // creciente
+    waxing: elong < 180,          // waxing
     waxingElong: elong
   };
 }
@@ -146,7 +146,7 @@ function nextPhase(fromJd, target) {
   return null;
 }
 
-// fase anterior más cercana (para la edad lunar real)
+// nearest previous phase (for the true lunar age)
 function prevPhase(fromJd, target) {
   let jd = fromJd, prev = signedDiff(jd, target);
   for (let i = 0; i < 220; i++) {
@@ -172,7 +172,7 @@ const PHASE_TARGETS = [
   { key:'menguante', t:270, idx:6 }
 ];
 
-// 0..7 -> L().phases8 (mismos límites de 45° que antes)
+// 0..7 -> L().phases8 (same 45° boundaries as before)
 function phaseIndex(elong) {
   const e = ((elong % 360) + 360) % 360;
   if (e < 22.5 || e >= 337.5) return 0;
@@ -187,11 +187,11 @@ function phaseIndex(elong) {
 const phaseName = elong => L().phases8[phaseIndex(elong)];
 
 /* ---------------------------------- Dreamspell */
-const EPOCH_KIN = 34;                     // 26 jul 1987 = Kin 34, Luna Magnética 1.1
+const EPOCH_KIN = 34;                     // 26 Jul 1987 = Kin 34, Magnetic Moon 1.1
 const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 const utcMs = (y, m, d) => Date.UTC(y, m - 1, d);   // m: 1-12
 
-// días transcurridos omitiendo los 29 de febrero (0.0 Hunab Ku)
+// elapsed days skipping 29 February (0.0 Hunab Ku)
 function countedDays(y1, m1, d1, y2, m2, d2) {
   const a = utcMs(y1, m1, d1), b = utcMs(y2, m2, d2);
   const lo = Math.min(a, b), hi = Math.max(a, b);
@@ -208,16 +208,16 @@ function countedDays(y1, m1, d1, y2, m2, d2) {
 
 function dreamspell(y, m, d) {
   let ey = y, em = m, ed = d;
-  const hunab = (m === 2 && d === 29);        // 0.0 Hunab Ku: misma fecha que el 28
+  const hunab = (m === 2 && d === 29);        // 0.0 Hunab Ku: same date as the 28th
   if (hunab) ed = 28;
 
   const kin = ((EPOCH_KIN - 1 + countedDays(1987, 7, 26, ey, em, ed)) % 260 + 260) % 260 + 1;
 
   const noch = (em > 7 || (em === 7 && ed >= 26));
   const startYear = noch ? ey : ey - 1;
-  const doy = countedDays(startYear, 7, 26, ey, em, ed) + 1;   // 1..364 (+365 = día fuera del tiempo)
+  const doy = countedDays(startYear, 7, 26, ey, em, ed) + 1;   // 1..364 (+365 = day out of time)
 
-  const isDoot = !hunab && doy === 365;             // 25 de julio
+  const isDoot = !hunab && doy === 365;             // 25 July
   let moon = isDoot ? 0 : Math.floor((doy - 1) / 28) + 1;
   let mday = isDoot ? 0 : ((doy - 1) % 28) + 1;
   const ns = ey - 1987 + (noch ? 1 : 0);
@@ -238,13 +238,13 @@ function dreamspell(y, m, d) {
   };
 }
 
-// Kin guía según el tono (tabla del tutorial)
+// Guide kin by tone (table from the tutorial)
 function guideOf(seal, tone) {
   const off = { 1:0, 6:0, 11:0, 2:12, 7:12, 12:12, 3:4, 8:4, 13:4, 4:-4, 9:-4, 5:8, 10:8 }[tone];
   const gs = ((seal - 1 + off) % 20 + 20) % 20 + 1;
   return { seal: gs, tone, kin: kinFor(gs, tone) };
 }
-// kin correspondiente a un sello y un tono (1..260)
+// kin for a seal and a tone (1..260)
 function kinFor(seal, tone) {
   for (let n = 1; n <= 260; n++)
     if (((n - 1) % 20) + 1 === seal && ((n - 1) % 13) + 1 === tone) return n;
@@ -252,51 +252,51 @@ function kinFor(seal, tone) {
 }
 
 
-/* ---------------------------------- glifos SVG */
-// Sello solar estilizado: anillo + motivo según el sello
+/* ---------------------------------- SVG glyphs */
+// Stylised solar seal: ring + motif per seal
 function sealGlyph(seal, color) {
   const c = COLOR_HEX[color];
   const k = seal - 1;
   const motifs = [
-    // 0 dragón: dos ojos + boca
+    // 0 dragon: two eyes + mouth
     `<path d="M12 26c0-7 5-12 13-12s13 5 13 12-5 12-13 12-13-5-13-12z" fill="none"/><circle cx="19" cy="24" r="2.6"/><circle cx="32" cy="24" r="2.6"/><path d="M18 32c4 3 10 3 14 0" fill="none"/>`,
-    // 1 viento
+    // 1 wind
     `<path d="M8 22h18a5 5 0 1 0-5-5" fill="none"/><path d="M8 30h22a4 4 0 1 1-4 4" fill="none"/>`,
-    // 2 noche
+    // 2 night
     `<path d="M34 22a12 12 0 1 1-14-11 9 9 0 0 0 14 11z" fill="none"/><circle cx="31" cy="15" r="1.8"/>`,
-    // 3 semilla
+    // 3 seed
     `<path d="M25 36c-7-4-10-10-10-16 6 0 12 3 16 9-1 4-3 6-6 7z" fill="none"/><path d="M25 36c0-8 1-13 4-18" fill="none"/>`,
-    // 4 serpiente
+    // 4 serpent
     `<path d="M12 30c6 4 12 4 16 0s-4-8-10-8-6 6 0 6 8-4 6-8" fill="none"/>`,
-    // 5 enlazador
+    // 5 world-bridger
     `<circle cx="25" cy="24" r="9" fill="none"/><path d="M25 9v30M12 24h26" />`,
-    // 6 mano
+    // 6 hand
     `<path d="M18 34V20a3 3 0 0 1 6 0v-4a3 3 0 0 1 6 0v4a3 3 0 0 1 6 0v14a8 8 0 0 1-16 0z" fill="none"/>`,
-    // 7 estrella
+    // 7 star
     `<path d="M25 10v28M12 18l26 12M38 18L12 30" fill="none"/>`,
-    // 8 luna
+    // 8 moon
     `<circle cx="25" cy="24" r="11" fill="none"/><path d="M25 13a11 11 0 0 0 0 22" fill="none"/>`,
-    // 9 perro
+    // 9 dog
     `<circle cx="25" cy="26" r="9" fill="none"/><path d="M16 19l-3-6M34 19l3-6" fill="none"/><circle cx="21" cy="24" r="1.6"/><circle cx="29" cy="24" r="1.6"/>`,
-    // 10 mono
+    // 10 monkey
     `<circle cx="25" cy="24" r="9" fill="none"/><path d="M13 22c-3 0-4 3-2 5M37 22c3 0 4 3 2 5" fill="none"/><path d="M20 28c2 3 8 3 10 0" fill="none"/>`,
-    // 11 humano
+    // 11 human
     `<circle cx="25" cy="17" r="5" fill="none"/><path d="M16 36c0-6 4-10 9-10s9 4 9 10" fill="none"/>`,
-    // 12 caminante
+    // 12 skywalker
     `<path d="M12 32l9-16 6 9 5-6 6 13z" fill="none"/><circle cx="33" cy="13" r="2.4"/>`,
-    // 13 mago
+    // 13 wizard
     `<path d="M25 9l8 12h-16z" fill="none"/><circle cx="25" cy="28" r="7" fill="none"/><path d="M12 36h26" fill="none"/>`,
-    // 14 águila
+    // 14 eagle
     `<path d="M10 22c6-4 10-4 15 2 5-6 9-6 15-2-4 8-10 12-15 12s-11-4-15-12z" fill="none"/>`,
-    // 15 guerrero
+    // 15 warrior
     `<path d="M25 10l10 6v10c0 8-5 12-10 14-5-2-10-6-10-14V16z" fill="none"/><path d="M20 24l4 5 7-9" fill="none"/>`,
-    // 16 tierra
+    // 16 earth
     `<circle cx="25" cy="24" r="11" fill="none"/><path d="M14 24h22M25 13c4 5 4 17 0 22M25 13c-4 5-4 17 0 22" fill="none"/>`,
-    // 17 espejo
+    // 17 mirror
     `<path d="M25 10l9 14-9 14-9-14z" fill="none"/><path d="M25 15v18" fill="none"/>`,
-    // 18 tormenta
+    // 18 storm
     `<path d="M14 20h14l-4 8h10l-14 12 4-10h-10z" fill="none"/>`,
-    // 19 sol
+    // 19 sun
     `<circle cx="25" cy="24" r="8" fill="none"/><path d="M25 8v5M25 35v5M9 24h5M36 24h5M14 13l3.5 3.5M32.5 30.5L36 34M36 14l-3.5 3.5M17.5 30.5L14 34" fill="none"/>`
   ];
   return `<svg viewBox="0 0 50 50" fill="none" stroke="${c}" stroke-width="2.1"
@@ -305,7 +305,7 @@ function sealGlyph(seal, color) {
     ${motifs[k] || ''}</svg>`;
 }
 
-// Disco lunar: terminador como elipse proyectada
+// Lunar disc: terminator as a projected ellipse
 function moonPath(k, waxing) {
   const N = 56;
   const rx = Math.abs(1 - 2 * k);
@@ -382,7 +382,7 @@ function setFavicon(k, waxing) {
   }
 }
 
-/* ---------------------------------- formato (Intl) */
+/* ---------------------------------- formatting (Intl) */
 function fmtLong(d) {
   return fmtDate(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
@@ -393,16 +393,16 @@ function fmtTime(d) {
   return fmtDate(d, { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/* ---------------------------------- estado */
+/* ---------------------------------- state */
 const state = {
-  date: new Date(),       // fecha seleccionada (local, a medianoche)
-  view: new Date()        // mes visible en el calendario
+  date: new Date(),       // selected date (local, midnight)
+  view: new Date()        // month shown in the calendar
 };
 
 const $ = id => document.getElementById(id);
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-/* ---------------------------------- render principal */
+/* ---------------------------------- main render */
 function render() {
   const d = state.date;
   const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
@@ -413,12 +413,12 @@ function render() {
   const st = moonState(ms);
   setFavicon(st.illum, st.waxing);
 
-  /* ---------- cabecera ---------- */
+  /* ---------- header ---------- */
   $('headline').textContent =
     `${fmtDate(d, { weekday: 'short', day: 'numeric', month: 'short' })} · Kin ${ds.kin}`;
   $('datepick').value = `${y}-${pad2(m)}-${pad2(day)}`;
 
-  /* ---------- disco lunar ---------- */
+  /* ---------- lunar disc ---------- */
   const phName = phaseName(st.elong);
   $('moonSvg').innerHTML = bigMoonSVG(st.illum, st.waxing);
   $('moonSvg').setAttribute('aria-label', `${fmtLong(d)} — ${phName}`);
@@ -433,7 +433,7 @@ function render() {
     return `${nf(pn ? nowJd - pn : st.age, 1)} d`;
   })();
 
-  /* ---------- luna del año ---------- */
+  /* ---------- moon of the year ---------- */
   const moon = ds.moon ? moonOf(ds.moon) : null;
   $('nsLabel').textContent = t('nsYear', { n: ds.ns });
   $('moonNo').textContent = ds.isDoot ? '★' : ds.moon;
@@ -493,7 +493,7 @@ function render() {
   $('kinPos').textContent = `${ds.kin}/260`;
   renderTzolkin(ds.kin);
 
-  /* ---------- zodíaco ---------- */
+  /* ---------- zodiac ---------- */
   const signIdx = Math.floor(st.lon / 30);
   const inSign = st.lon - signIdx * 30;
   const deg = Math.floor(inSign);
@@ -507,7 +507,7 @@ function render() {
   $('zodiacNote').innerHTML = t('zodiacNote');
   renderWheel(st.lon, signIdx);
 
-  /* ---------- próximas fases ---------- */
+  /* ---------- next phases ---------- */
   const fromJd = jdFromMs(Date.now());
   const list = PHASE_TARGETS.map(p => ({ ...p, jd: nextPhase(fromJd, p.t) }))
     .filter(p => p.jd)
@@ -523,10 +523,10 @@ function render() {
   }).join('');
   $('synodicNote').innerHTML = t('synodicNote', { n: nf(29.530588853, 2) });
 
-  /* ---------- calendario gregoriano ---------- */
+  /* ---------- Gregorian calendar ---------- */
   renderCalendar();
 
-  /* ---------- año de 13 lunas ---------- */
+  /* ---------- 13-moon year ---------- */
   const startYear = (m > 7 || (m === 7 && day >= 26)) ? y : y - 1;
   $('yearTitle').textContent = t('yearTitle', { a: startYear, b: startYear + 1 });
   const bearer = dreamspell(startYear, 7, 26);
@@ -564,7 +564,7 @@ function renderTzolkin(now) {
   [...el.children].forEach(c => c.classList.toggle('now', +c.dataset.k === now));
 }
 
-/* ---------------------------------- rueda zodiacal */
+/* ---------------------------------- zodiac wheel */
 function renderWheel(lon, signIdx) {
   const cx = 100, cy = 100, R = 82;
   const pt = (lambda, r) => {
@@ -594,13 +594,13 @@ function renderWheel(lon, signIdx) {
   $('wheel').innerHTML = s;
 }
 
-/* ---------------------------------- calendario del mes */
+/* ---------------------------------- month calendar */
 function renderCalendar() {
   const v = state.view;
   const vy = v.getFullYear(), vm = v.getMonth();
   $('calTitle').textContent = cap(fmtDate(new Date(vy, vm, 1), { month: 'long', year: 'numeric' }));
 
-  // cabecera de días, lunes primero (1 ene 2024 fue lunes)
+  // day header, Monday first (1 Jan 2024 was a Monday)
   let dow = '';
   for (let i = 0; i < 7; i++) {
     dow += `<span>${fmtDate(new Date(2024, 0, 1 + i), { weekday: 'short' }).replace(/\.$/, '')}</span>`;
@@ -649,15 +649,15 @@ function renderCalendar() {
   });
 }
 
-/* ---------------------------------- tira del año */
+/* ---------------------------------- year strip */
 function renderYearStrip(ds) {
   let html = '';
   for (let i = 0; i < 13; i++) {
     const mo = moonOf(i + 1);
     const cur = i + 1 === ds.moon;
-    // la misma raya que en la fila gregoriana, dentro de la luna:
-    // (día de la luna − ½) / 28. En el día fuera del tiempo no hay luna,
-    // así que tampoco hay raya en ninguna de las dos escalas.
+    // the same marker as in the Gregorian row, inside the moon:
+    // (day of the moon − ½) / 28. On the day out of time there is no moon,
+    // so there is no marker on either scale.
     const mark = cur
       ? `<span class="ymark" style="left:${((ds.mday - 0.5) / 28 * 100).toFixed(2)}%"></span>`
       : '';
@@ -679,14 +679,14 @@ function renderYearStrip(ds) {
   };
 }
 
-/* ------ franja gregoriana paralela: los mismos 364 días, mes a mes ------ */
-// La tira de arriba son 13 bloques iguales de 28 días; esta es la misma
-// extensión de tiempo repartida por meses del calendario civil. Los dos
-// ejes son proporcionales al día, así que se pueden leer en vertical:
-// la luna 5 empieza el 22 de octubre y la franja dice octubre → noviembre.
-const YEAR_SPAN = 364;                      // 13 × 28: 26 jul → 24 jul
+/* ------ parallel Gregorian strip: the same 364 days, month by month ------ */
+// The strip above is 13 equal blocks of 28 days; this is the same span of
+// time spread across the months of the civil calendar. Both axes are
+// proportional to the day, so they can be read vertically:
+// moon 5 starts on 22 October and the strip says October → November.
+const YEAR_SPAN = 364;                      // 13 × 28: 26 Jul → 24 Jul
 function renderGregTrack(ds, startYear) {
-  const dayAt = i => new Date(startYear, 6, 26 + i);   // 26 de julio + i días
+  const dayAt = i => new Date(startYear, 6, 26 + i);   // 26 July + i days
   const date = state.date;
   const segs = [];
   for (let i = 0; i < YEAR_SPAN;) {
@@ -696,16 +696,16 @@ function renderGregTrack(ds, startYear) {
     segs.push({ i, n: n, d: dayAt(i) });
     i += n;
   }
-  // las mismas 13 columnas que la fila de las lunas, pero repartidas por días
-  // de cada mes: las dos suman 364, así que los dos ejes son comparables
+  // the same 13 columns as the moon row, but spread by days of each month:
+  // both add up to 364, so the two axes are comparable
   $('gregTrack').style.gridTemplateColumns =
     segs.map(s => `${s.n}fr`).join(' ');
   let html = '';
   for (const s of segs) {
     const cur = date >= dayAt(s.i) && date < dayAt(s.i + s.n);
-    // la raya del día, igual que en la fila de las lunas: (día del año − ½) / 364.
-    // Con las celdas pegadas (sin hueco) cae exactamente en la misma x que la
-    // raya de la luna, y las dos se pueden leer en vertical.
+    // the day marker, as in the moon row: (day of the year − ½) / 364.
+    // With the cells touching (no gap) it lands on exactly the same x as the
+    // moon marker, and the two can be read vertically.
     const mark = cur
       ? `<span class="ymark" style="left:${((ds.doy - s.i - 0.5) / s.n * 100).toFixed(2)}%"`
         + ` title="${fmtLong(date)}"></span>`
@@ -717,8 +717,8 @@ function renderGregTrack(ds, startYear) {
          + `<span class="s">${t('daysAbbr', { n: s.n })}</span></div>`;
   }
   $('gregTrack').innerHTML = html;
-  // igual que la segunda línea de la luna: si no cabe, se acorta a la inicial;
-  // si tampoco cabe (el tramo de julio son 6 días), se oculta entera
+  // like the second line of the moon: if it does not fit, shorten to the initial;
+  // if that does not fit either (the July stretch is 6 days), hide it entirely
   [...$('gregTrack').querySelectorAll('.ycell .k')].forEach(lab => {
     const cell = lab.parentElement;
     if (lab.scrollWidth > cell.clientWidth - 2) lab.textContent = lab.dataset.narrow;
@@ -728,7 +728,7 @@ function renderGregTrack(ds, startYear) {
   $('gregNow').textContent = fmtDate(date, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/* ---------------------------------- navegación */
+/* ---------------------------------- navigation */
 function shiftDays(n) {
   state.date = new Date(state.date.getFullYear(), state.date.getMonth(), state.date.getDate() + n);
   state.view = new Date(state.date.getFullYear(), state.date.getMonth(), 1);
@@ -762,7 +762,7 @@ document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 't') { $('today').click(); }
 });
 
-/* ---------------------------------- estrellas */
+/* ---------------------------------- stars */
 (function stars() {
   const box = $('stars');
   const n = window.innerWidth < 700 ? 60 : 130;
@@ -776,12 +776,12 @@ document.addEventListener('keydown', e => {
   box.innerHTML = html;
 })();
 
-/* ---------------------------------- arranque */
+/* ---------------------------------- boot */
 LANG = detectLang();
 state.date = new Date();
 state.view = new Date();
 
-// enlace directo: index.html?d=2026-11-20&lang=de
+// deep link: index.html?d=2026-11-20&lang=de
 const qd = new URLSearchParams(location.search).get('d');
 if (qd && /^\d{4}-\d{2}-\d{2}$/.test(qd)) {
   const [qy, qm, qdd] = qd.split('-').map(Number);
@@ -793,30 +793,30 @@ applyStaticText();
 setLang(LANG);
 buildLangSwitch();
 
-// banco de pruebas: index.html?selftest=1
+// test bench: index.html?selftest=1
 if (new URLSearchParams(location.search).has('selftest')) {
   const cases = [
-    ['1987-07-26', 34, 1, 1],   // ancla: Kin 34, Luna Magnética 1.1
-    ['2026-11-20', 86, 5, 6],   // ancla: Kin 86, Luna Entonada 5.6
-    ['2028-02-29', 31, 8, 22],  // ancla: mismo día que el 28
+    ['1987-07-26', 34, 1, 1],   // anchor: Kin 34, Magnetic Moon 1.1
+    ['2026-11-20', 86, 5, 6],   // anchor: Kin 86, Overtone Moon 5.6
+    ['2028-02-29', 31, 8, 22],  // anchor: same day as the 28th
     ['2028-02-28', 31, 8, 22],
-    ['2012-12-21', 207, 6, 9],  // Kin 207, Mano Cristal Azul
-    ['2026-07-25', 228, 0, 0]   // día fuera del tiempo (kin continuo, un día antes del portador 229)
+    ['2012-12-21', 207, 6, 9],  // Kin 207, Blue Crystal Hand
+    ['2026-07-25', 228, 0, 0]   // day out of time (continuous kin, one day before carrier 229)
   ];
   let out = `lang=${LANG}  (${fmtLong(new Date(2026, 10, 20))})\n`;
   for (const [iso, k, mo, dy] of cases) {
     const [y, m, dd] = iso.split('-').map(Number);
     const r = dreamspell(y, m, dd);
     const ok = r.kin === k && r.moon === mo && r.mday === dy ? 'OK ' : 'FAIL';
-    out += `${ok} ${iso}  kin ${r.kin} (want ${k})  luna ${r.moon}.${r.mday} (want ${mo}.${dy})  NS${r.ns}  doot=${r.isDoot}  ${sigName(r.seal, r.tone)}\n`;
+    out += `${ok} ${iso}  kin ${r.kin} (want ${k})  moon ${r.moon}.${r.mday} (want ${mo}.${dy})  NS${r.ns}  doot=${r.isDoot}  ${sigName(r.seal, r.tone)}\n`;
   }
   const jd = jdFromMs(Date.parse('2026-11-24T14:53:00Z'));
   out += `\nUSNO llena 2026-11-24 14:53Z -> elong=${elongation(jd).toFixed(3)} (want 180)\n`;
-  out += `edad lunar 2026-11-20 -> ${moonState(Date.parse('2026-11-20T12:00:00Z')).age.toFixed(2)} d\n`;
-  out += `lon lunar 2026-11-20 12Z -> ${moonState(Date.parse('2026-11-20T12:00:00Z')).lon.toFixed(3)} (python 3.389)\n`;
-  out += `constelacion 3.39 -> ${constelOf(3.39)} | 250 -> ${constelOf(250)} | 355 -> ${constelOf(355)}\n`;
-  out += `fases: ${L().phases8.join(' / ')}\n`;
-  out += `mes: ${fmtDate(new Date(2026, 10, 1), { month: 'long', year: 'numeric' })} | dow: ${fmtDate(new Date(2024, 0, 1), { weekday: 'short' })}\n`;
+  out += `lunar age 2026-11-20 -> ${moonState(Date.parse('2026-11-20T12:00:00Z')).age.toFixed(2)} d\n`;
+  out += `moon lon 2026-11-20 12Z -> ${moonState(Date.parse('2026-11-20T12:00:00Z')).lon.toFixed(3)} (python 3.389)\n`;
+  out += `constellation 3.39 -> ${constelOf(3.39)} | 250 -> ${constelOf(250)} | 355 -> ${constelOf(355)}\n`;
+  out += `phases: ${L().phases8.join(' / ')}\n`;
+  out += `month: ${fmtDate(new Date(2026, 10, 1), { month: 'long', year: 'numeric' })} | dow: ${fmtDate(new Date(2024, 0, 1), { weekday: 'short' })}\n`;
   const el = document.createElement('pre');
   el.id = 'selftest';
   el.style.cssText = 'position:fixed;left:0;top:0;z-index:99;background:#000;color:#0f0;font:12px monospace;padding:8px;white-space:pre';
@@ -825,7 +825,7 @@ if (new URLSearchParams(location.search).has('selftest')) {
   console.log(out);
 }
 
-// verificación de maquetación: index.html?barcode=layout
+// layout verification: index.html?barcode=layout
 if (new URLSearchParams(location.search).get('barcode') === 'layout') {
   const R = id => document.getElementById(id).getBoundingClientRect();
   const days = [...document.querySelectorAll('#days .day[data-d]')].map(e => e.getBoundingClientRect());
@@ -869,8 +869,8 @@ if (new URLSearchParams(location.search).get('barcode') === 'layout') {
       const c = m.parentElement.getBoundingClientRect(), r = m.getBoundingClientRect();
       return Math.round((r.left + r.width / 2 - c.left) / c.width * 100);
     })(),
-    // las dos rayas, en la misma x: si esto deja de dar 0–1 px, las dos
-    // escalas han dejado de ser comparables en vertical
+    // both markers, on the same x: if this stops giving 0–1 px, the two
+    // scales are no longer comparable vertically
     (() => {
       const a = document.querySelector('#yearStrip .ymark');
       const b = document.querySelector('#gregTrack .ymark');
@@ -893,7 +893,7 @@ if (new URLSearchParams(location.search).get('barcode') === 'layout') {
   });
 }
 
-// volcado de geometría para revisar a ojo o desde scripts: index.html?rects=1
+// geometry dump for eyeballing or scripting: index.html?rects=1
 if (new URLSearchParams(location.search).has('rects')) {
   const ids = ['yearCard', 'yearStrip', 'stripStart', 'gregTrack', 'gregCap',
                'gregNow', 'calCard', 'days'];
@@ -907,16 +907,16 @@ if (new URLSearchParams(location.search).has('rects')) {
     const r = el.getBoundingClientRect();
     console.log(`rect gcell${i} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
     const lab = el.querySelector('.k');
-    const oculta = lab.style.visibility === 'hidden';
+    const hidden = lab.style.visibility === 'hidden';
     console.log(`label gcell${i} "${lab.textContent}"`
-      + ` ${oculta ? 'oculta' : (lab.scrollWidth > el.clientWidth ? 'recortada' : 'entera')}`
+      + ` ${hidden ? 'hidden' : (lab.scrollWidth > el.clientWidth ? 'clipped' : 'whole')}`
       + ` ${Math.round(lab.scrollWidth)}/${el.clientWidth}`);
   });
   [...document.querySelectorAll('#yearStrip .ycell')].forEach((el, i) => {
     const r = el.getBoundingClientRect();
     console.log(`rect ycell${i} ${Math.round(r.left)} ${Math.round(r.top)} ${Math.round(r.width)} ${Math.round(r.height)}`);
   });
-  // las dos rayas con su celda, para poder comparar las dos escalas
+  // both markers with their cell, so the two scales can be compared
   [['ymark', '#yearStrip'], ['gmark', '#gregTrack']].forEach(([name, sel]) => {
     const m = document.querySelector(sel + ' .ymark');
     if (!m) return;
@@ -928,8 +928,8 @@ if (new URLSearchParams(location.search).has('rects')) {
 
 // the thumbnail at 240x240 on white, so it can be counted in pixels: index.html?thumb=1
 if (new URLSearchParams(location.search).has('thumb')) {
-  const modo = new URLSearchParams(location.search).get('thumb');
-  const src = modo === 'fallback' ? FALLBACK_ICON
+  const mode = new URLSearchParams(location.search).get('thumb');
+  const src = mode === 'fallback' ? FALLBACK_ICON
     : document.querySelector('link[rel="icon"]').getAttribute('href');
   const svg = decodeURIComponent(src.replace('data:image/svg+xml,', ''))
     .replace('<svg ', "<svg width='240' height='240' ");
@@ -937,31 +937,31 @@ if (new URLSearchParams(location.search).has('thumb')) {
   document.body.innerHTML = '';
   document.body.style.cssText = 'margin:0;padding:0;background:#fff;width:240px;height:240px';
   document.body.innerHTML = svg;
-  console.log(`thumb modo=${modo} k=${st.illum.toFixed(4)} waxing=${st.waxing ? 1 : 0}`);
+  console.log(`thumb mode=${mode} k=${st.illum.toFixed(4)} waxing=${st.waxing ? 1 : 0}`);
 }
 
 // the day-out-of-time disclosure, opened and measured: index.html?doot=1
 if (new URLSearchParams(location.search).has('doot')) {
   const dd = $('dootDetails');
-  const cerrado = dd.getBoundingClientRect().height;
+  const closed = dd.getBoundingClientRect().height;
   dd.open = true;
   const r = dd.getBoundingClientRect();
   const sm = dd.querySelector('summary').getBoundingClientRect();
-  console.log(`doot cerrado=${Math.round(cerrado)} summary=${Math.round(sm.height)}`
+  console.log(`doot closed=${Math.round(closed)} summary=${Math.round(sm.height)}`
     + `x${Math.round(sm.width)}`);
-  const enlaces = [...dd.querySelectorAll('a')];
-  const desbordes = [...dd.querySelectorAll('*')]
+  const links = [...dd.querySelectorAll('a')];
+  const overflows = [...dd.querySelectorAll('*')]
     .filter(e => e.clientWidth > 0 && e.scrollWidth > e.clientWidth + 2).length;
   console.log(`doot open=${dd.open} y=${Math.round(r.top)} h=${Math.round(r.height)}`
-    + ` w=${Math.round(r.width)} p=${dd.querySelectorAll('p').length} a=${enlaces.length}`);
-  console.log(`doot desbordes=${desbordes} scrollW=${document.documentElement.scrollWidth}`
+    + ` w=${Math.round(r.width)} p=${dd.querySelectorAll('p').length} a=${links.length}`);
+  console.log(`doot overflows=${overflows} scrollW=${document.documentElement.scrollWidth}`
     + ` innerW=${window.innerWidth}`);
-  enlaces.forEach(a => console.log('doot link ' + a.getAttribute('href')
+  links.forEach(a => console.log('doot link ' + a.getAttribute('href')
     + ' rel=' + a.getAttribute('rel') + ' target=' + a.getAttribute('target')));
-  console.log('doot texto: ' + dd.textContent.replace(/\s+/g, ' ').trim());
+  console.log('doot text: ' + dd.textContent.replace(/\s+/g, ' ').trim());
 }
 
-// volcado de texto para revisar la traducción: index.html?dump=1&lang=de
+// text dump for reviewing the translation: index.html?dump=1&lang=de
 if (new URLSearchParams(location.search).has('dump')) {
   console.log('LANG=' + LANG + ' html-lang=' + document.documentElement.lang);
   console.log('SWITCH=' + document.getElementById('langSw').textContent.trim());

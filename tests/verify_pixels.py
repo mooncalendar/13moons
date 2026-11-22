@@ -1,16 +1,16 @@
-"""Comprobación en píxeles de que las dos escalas del año se leen en vertical.
+"""Pixel check that the two year scales line up vertically.
 
-La tarjeta del año pone la misma extensión de tiempo dos veces: arriba las 13
-lunas (28 días cada una) y abajo los meses gregorianos. La promesa es que una
-fecha cae en la misma x en las dos filas, así que la prueba no mira el DOM
-—que ya se comprueba en check.py— sino la imagen:
+The year card draws the same span of time twice: the 13 moons on top (28 days
+each) and the Gregorian months below. The promise is that a date falls on the
+same x in both rows, so this looks at the image rather than the DOM — which
+check.py already covers:
 
-  1. la raya dorada de cada fila existe, y las dos están a la misma x;
-  2. la raya gregoriana cae donde toca según el día del año;
-  3. la celda del día está resaltada en las dos filas;
-  4. cada celda con ancho suficiente lleva su etiqueta dibujada.
+  1. the gold marker exists in each row, and both are on the same x;
+  2. the Gregorian marker lands where the day of the year says it should;
+  3. the day cell is highlighted in both rows;
+  4. every cell wide enough has its label drawn.
 
-Uso: python3 tests/verify_pixels.py [AAAA-MM-DD] [idioma] [ancho]
+Usage: python3 tests/verify_pixels.py [YYYY-MM-DD] [lang] [width]
 """
 import datetime
 import os
@@ -29,10 +29,10 @@ W = int(sys.argv[3]) if len(sys.argv) > 3 else 1280
 H = 2900
 
 GOLD = (229, 192, 123)
-INK = 120                       # suma rgb que ya se separa del fondo
+INK = 120                       # rgb sum that already stands out from the bg
 TOL = 30
 
-# --- geometría declarada por la propia página -----------------------------
+# --- geometry declared by the page itself ---------------------------------
 out = browser('file://%s/index.html?rects=1&lang=%s&d=%s' % (BASE, LANG, WHEN),
               os.path.join(WORK, '_vp_rects.png'), W, H, capture=True)
 rects, cells = {}, {}
@@ -46,9 +46,9 @@ for line in out.splitlines():
             tuple(int(m.group(i)) for i in range(3, 7))
 
 if 'yearStrip' not in rects or 'gregTrack' not in rects:
-    sys.exit('no se encontraron las dos filas en el volcado de geometría')
+    sys.exit('the two rows are missing from the geometry dump')
 
-# --- la captura ------------------------------------------------------------
+# --- the screenshot -------------------------------------------------------
 png = os.path.join(WORK, '_vp_shot.png')
 browser('file://%s/index.html?lang=%s&d=%s' % (BASE, LANG, WHEN), png, W, H)
 w, h, ch, px = read_png(png)
@@ -60,13 +60,13 @@ def at(x, y):
 
 
 def warm_line(box):
-    """x de la raya del día dentro de una caja, y qué parte de la fila cruza.
+    """x of the day marker inside a box, and how much of the row it spans.
 
-    La raya es un degradado dorado que pasa por detrás del número y del nombre,
-    así que ni es de un color plano ni es continua. Se busca la columna más
-    cálida (rojo − azul) y luego se mide en cuántas filas esa columna es más
-    cálida que la mediana de su propia fila: eso distingue una raya que cruza
-    la celda de una mancha de texto.
+    The marker is a gold gradient running behind the number and the name, so it
+    is neither flat-coloured nor continuous. The warmest column (red - blue) is
+    found first, then measured across how many rows that column is warmer than
+    the median of its own row: that tells a marker crossing the cell from a
+    patch of text.
     """
     x0, y0, ww, hh = box
     cols = []
@@ -77,33 +77,33 @@ def warm_line(box):
             s += r - b
         cols.append((s / hh, x))
     best, mx = max(cols)
-    cruza = 0
+    span = 0
     for y in range(y0, y0 + hh):
-        fila = []
+        row = []
         for x in range(x0, x0 + ww):
             r, g, b = at(x, y)
-            fila.append(r - b)
-        fila.sort()
-        med = fila[len(fila) // 2]
+            row.append(r - b)
+        row.sort()
+        med = row[len(row) // 2]
         r, g, b = at(mx, y)
         if r - b > med + 12:
-            cruza += 1
-    return mx, cruza / hh, best
+            span += 1
+    return mx, span / hh, best
 
 
 moon_box, greg_box = rects['yearStrip'], rects['gregTrack']
 mx, mcover, mwarm = warm_line(moon_box)
 gx, gcover, gwarm = warm_line(greg_box)
 
-print('captura %dx%d · %s · %s' % (w, h, WHEN, LANG))
-print('fila de las lunas  y=%d..%d  raya en x=%d · cruza el %d%% de la fila'
+print('screenshot %dx%d · %s · %s' % (w, h, WHEN, LANG))
+print('moon row      y=%d..%d  marker at x=%d · spans %d%% of the row'
       % (moon_box[1], moon_box[1] + moon_box[3], mx, mcover * 100))
-print('fila gregoriana    y=%d..%d  raya en x=%d · cruza el %d%% de la fila'
+print('gregorian row y=%d..%d  marker at x=%d · spans %d%% of the row'
       % (greg_box[1], greg_box[1] + greg_box[3], gx, gcover * 100))
 
 fails = []
 
-# --- 2. la raya gregoriana cae donde toca --------------------------------
+# --- 2. the Gregorian marker lands where it should ------------------------
 d = datetime.date.fromisoformat(WHEN)
 start = datetime.date(d.year, 7, 26)
 if d < start:
@@ -111,32 +111,32 @@ if d < start:
 doy = (d - start).days + 1
 
 if doy > 364:
-    print('\n%s es el día fuera del tiempo: no debe haber raya' % WHEN)
+    print('\n%s is the day out of time: there must be no marker' % WHEN)
     if mcover > .5 or gcover > .5:
-        fails.append('hay raya en el día fuera del tiempo')
+        fails.append('marker on the day out of time')
 else:
-    # --- 1. las dos rayas en la misma x ----------------------------------
+    # --- 1. both markers on the same x -----------------------------------
     delta = abs(mx - gx)
-    print('\n1. alineación vertical: %d px de desfase %s'
-          % (delta, 'OK' if delta <= 2 else 'FALLA'))
+    print('\n1. vertical alignment: %d px apart %s'
+          % (delta, 'OK' if delta <= 2 else 'FAIL'))
     if delta > 2:
-        fails.append('las dos rayas están a %d px' % delta)
-    # la raya tiene que cruzar su fila de arriba abajo, no ser un trozo de texto
-    for etq, cov in (('lunas', mcover), ('gregoriana', gcover)):
+        fails.append('the two markers are %d px apart' % delta)
+    # the marker must span its row top to bottom, not be a patch of text
+    for label, cov in (('moons', mcover), ('gregorian', gcover)):
         if cov < 0.70:
-            fails.append('la raya de %s sólo cruza el %d%% de su fila'
-                         % (etq, cov * 100))
+            fails.append('the %s marker spans only %d%% of its row'
+                         % (label, cov * 100))
 
     exp = greg_box[0] + (doy - 0.5) / 364 * greg_box[2]
     err = gx - exp
-    print('\n2. día %d del año lunar · raya esperada x≈%.0f, medida x=%d · %s (%+.1f px)'
-          % (doy, exp, gx, 'OK' if abs(err) < 6 else 'FALLA', err))
+    print('\n2. day %d of the 13-moon year · expected x≈%.0f, measured x=%d · %s (%+.1f px)'
+          % (doy, exp, gx, 'OK' if abs(err) < 6 else 'FAIL', err))
     if abs(err) >= 6:
-        fails.append('la raya gregoriana está a %+.1f px de donde toca' % err)
+        fails.append('the Gregorian marker is %+.1f px off target' % err)
 
-    # --- 3. la celda del día, resaltada en las dos filas ----------------
+    # --- 3. the day cell, highlighted in both rows -----------------------
     def warmth(box):
-        """media de (rojo − azul): el resalte dorado sube, el fondo es azulado."""
+        """mean of (red - blue): the gold highlight rises, the bg is bluish."""
         n = s = 0
         for y in range(box[1] + 4, box[1] + box[3] - 4):
             for x in range(box[0] + 2, box[0] + box[2] - 2):
@@ -145,25 +145,25 @@ else:
                 n += 1
         return s / max(n, 1)
 
-    print('\n3. celda del día resaltada:')
-    for name, key, mark_x in (('lunas', 'ycell', mx), ('gregoriana', 'gcell', gx)):
+    print('\n3. day cell highlighted:')
+    for name, key, mark_x in (('moons', 'ycell', mx), ('gregorian', 'gcell', gx)):
         cs = cells.get(key, {})
         cur = [i for i, b in cs.items() if b[0] <= mark_x < b[0] + b[2]]
         if not cur:
-            fails.append('la raya de %s no cae en ninguna celda' % name)
+            fails.append('the %s marker falls in no cell' % name)
             continue
-        mine = warmth(cs[cur[0]])
-        otros = [warmth(b) for i, b in cs.items() if i != cur[0]]
-        media = sum(otros) / max(len(otros), 1)
-        good = mine > media + 4
-        print('   %-11s celda %2d · calidez %.0f vs %.0f del resto · %s'
-              % (name, cur[0] + 1, mine, media, 'OK' if good else 'FALLA'))
+        own = warmth(cs[cur[0]])
+        others = [warmth(b) for i, b in cs.items() if i != cur[0]]
+        mean = sum(others) / max(len(others), 1)
+        good = own > mean + 4
+        print('   %-11s cell %2d · warmth %.0f vs %.0f for the rest · %s'
+              % (name, cur[0] + 1, own, mean, 'OK' if good else 'FAIL'))
         if not good:
-            fails.append('la celda del día no está resaltada en %s' % name)
+            fails.append('the day cell is not highlighted in %s' % name)
 
-# --- 4. etiquetas dibujadas donde caben -----------------------------------
-print('\n4. etiquetas por celda')
-sin_tinta = []
+# --- 4. labels drawn where they fit ---------------------------------------
+print('\n4. labels per cell')
+blank = []
 for key in ('ycell', 'gcell'):
     for i, b in sorted(cells.get(key, {}).items()):
         if b[2] < 26:
@@ -174,11 +174,11 @@ for key in ('ycell', 'gcell'):
                   for x in range(b[0] + 2, b[0] + b[2] - 2)
                   if sum(at(x, y)) > INK)
         if ink < 6:
-            sin_tinta.append('%s%d (%dpx)' % (key[0], i + 1, b[2]))
-print('   celdas con ancho suficiente y sin tinta: %s'
-      % (', '.join(sin_tinta) or 'ninguna'))
-if sin_tinta:
-    fails.append('etiquetas ausentes: %s' % ', '.join(sin_tinta))
+            blank.append('%s%d (%dpx)' % (key[0], i + 1, b[2]))
+print('   cells wide enough with no ink: %s'
+      % (', '.join(blank) or 'none'))
+if blank:
+    fails.append('missing labels: %s' % ', '.join(blank))
 
-print('\n%s' % ('TODO OK' if not fails else 'FALLOS: ' + ' · '.join(fails)))
+print('\n%s' % ('ALL OK' if not fails else 'FAILURES: ' + ' · '.join(fails)))
 sys.exit(0 if not fails else 1)

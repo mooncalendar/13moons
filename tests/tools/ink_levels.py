@@ -18,7 +18,7 @@ def at(x, y):
     return (px[i], px[i + 1], px[i + 2]) if ch >= 3 else (px[i], px[i], px[i])
 
 
-# fila del texto: la de más píxeles claros dentro de la franja
+# text row: the one with the most light pixels inside the strip
 def band(y_from, y_to, left, width):
     best = (0, 0, 0)
     for y in range(y_from, y_to):
@@ -28,7 +28,7 @@ def band(y_from, y_to, left, width):
     return best
 
 
-# localizar la franja: raya dorada de 16..30 px
+# locate the strip: gold marker 16..30 px wide
 cands = []
 for x in range(w):
     run = ys = 0
@@ -44,7 +44,7 @@ for x in range(w):
             run = 0
 run, mx, my = max(cands, key=lambda c: (c[2], c[0]))
 y0, y1 = my + 4, my + run - 4
-print('franja en y %d..%d (raya x=%d)' % (y0, y1, mx))
+print('strip at y %d..%d (marker x=%d)' % (y0, y1, mx))
 
 segs, i = [], 0
 while i < SPAN:
@@ -55,7 +55,7 @@ while i < SPAN:
     segs.append((i, n, d0.strftime('%b').lower()))
     i += n
 
-print('%-5s %s' % ('mes', '   '.join('>%d' % t for t in (100, 150, 200, 300))))
+print('%-5s %s' % ('month', '   '.join('>%d' % t for t in (100, 150, 200, 300))))
 for st, n, name in segs:
     xa = int(LEFT + st / SPAN * WIDTH) + 3
     xb = int(LEFT + (st + n) / SPAN * WIDTH) - 3

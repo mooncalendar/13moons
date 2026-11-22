@@ -1,69 +1,69 @@
-name: Publicar en GitHub Pages
+name: Publish to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Permisos mínimos que necesita el despliegue de Pages: leer el repo,
-# escribir en Pages y pedir el token OIDC con el que firma el despliegue.
+# Minimum permissions the Pages deploy needs: read the repo, write to Pages
+# and request the OIDC token the deployment is signed with.
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Un despliegue a la vez; no se cancela el que ya está en vuelo para no
-# dejar el sitio a medias.
+# One deploy at a time; the one already in flight is not cancelled, so the
+# site never ends up half-published.
 concurrency:
   group: pages
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Preparar el sitio
+    name: Prepare the site
     runs-on: ubuntu-latest
     steps:
-      - name: Traer el repositorio
+      - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Copiar sólo la app (sin pruebas ni documentación)
+      - name: Copy only the app (no tests, no docs)
         run: |
           set -euo pipefail
           mkdir -p _site
           cp index.html app.js i18n.js _site/
-          # sin Jekyll: los nombres con guion bajo y el .nojekyll evitan
-          # que Pages intente procesar el sitio como plantilla
+          # no Jekyll: underscore names plus .nojekyll stop Pages from
+          # processing the site as a template
           touch _site/.nojekyll
 
-      - name: Comprobar que el artefacto está completo
+      - name: Check the artefact is complete
         run: |
           set -euo pipefail
           for f in index.html app.js i18n.js; do
-            test -s "_site/$f" || { echo "falta _site/$f"; exit 1; }
+            test -s "_site/$f" || { echo "missing _site/$f"; exit 1; }
           done
-          # cada <script src> del HTML tiene que existir en el artefacto:
-          # un archivo olvidado en el cp dejaría la página en blanco
+          # every <script src> in the HTML has to exist in the artefact:
+          # a file left out of the cp would leave the page blank
           refs=$(grep -o 'src="[^"]*\.js"' _site/index.html | sed 's/src="//; s/"$//')
-          echo "referencias: $(echo $refs)"
+          echo "references: $(echo $refs)"
           for f in $refs; do
-            test -f "_site/$f" || { echo "referencia rota: $f"; exit 1; }
+            test -f "_site/$f" || { echo "broken reference: $f"; exit 1; }
           done
-          echo "artefacto OK: $(du -sh _site | cut -f1)"
+          echo "artefact OK: $(du -sh _site | cut -f1)"
 
-      # Intenta activar Pages por API. Casi siempre falla: crear el sitio
-      # exige permiso de administración y el GITHUB_TOKEN no lo tiene, así que
-      # este paso es best-effort y el que decide de verdad es el siguiente.
-      - name: Intentar activar Pages
+      # Tries to enable Pages through the API. It almost always fails: creating
+      # the site requires admin permission and GITHUB_TOKEN does not have it, so
+      # this step is best-effort and the next one is what actually decides.
+      - name: Try to enable Pages
         id: pages
         continue-on-error: true
         uses: actions/configure-pages@v5
         with:
           enablement: true
 
-      # Pages se activa una sola vez, a mano, en Settings → Pages. Sin eso el
-      # despliegue falla más adelante con un error genérico; aquí se dice qué
-      # hacer y se corta antes de gastar el resto del trabajo.
-      - name: Comprobar que Pages está activado
+      # Pages is enabled once, by hand, in Settings → Pages. Without it the
+      # deploy fails later with a generic error; here it says what to do and
+      # stops before spending the rest of the work.
+      - name: Check that Pages is enabled
         run: |
           set -euo pipefail
           code=$(curl -s -o /tmp/pages.json -w '%{http_code}' \
@@ -73,57 +73,57 @@ jobs:
           echo "Pages API: HTTP $code"
           if [ "$code" != "200" ]; then
             {
-              echo "::error title=Pages no está activado::GitHub Pages aún no está habilitado en ${{ github.repository }}."
-              echo "Actívalo una vez: Settings → Pages → Source: GitHub Actions."
-              echo "Después vuelve a ejecutar este workflow (Actions → Run workflow)."
+              echo "::error title=Pages is not enabled::GitHub Pages is not enabled yet on ${{ github.repository }}."
+              echo "Enable it once: Settings → Pages → Source: GitHub Actions."
+              echo "Then run this workflow again (Actions → Run workflow)."
             } >&2
-            echo "### Falta un paso manual" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
-            echo "Activa Pages una vez en **Settings → Pages → Source: GitHub Actions**." >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            echo "### A manual step is missing" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            echo "Enable Pages once in **Settings → Pages → Source: GitHub Actions**." >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
             exit 1
           fi
           cat /tmp/pages.json | head -c 300
 
-      - name: Empaquetar el artefacto
+      - name: Package the artefact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
   deploy:
-    name: Desplegar
+    name: Deploy
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Desplegar en Pages
+      - name: Deploy to Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Comprobar que el sitio responde y sirve la app
+      - name: Check the site answers and serves the app
         run: |
           set -euo pipefail
           url="${{ steps.deployment.outputs.page_url }}"
-          # Pages tarda unos segundos en propagar el despliegue nuevo
+          # Pages takes a few seconds to propagate the new deployment
           for i in $(seq 1 10); do
             code=$(curl -s -o /tmp/index.html -w '%{http_code}' "$url" || true)
             [ "$code" = "200" ] && break
-            echo "intento $i: HTTP ${code:-sin respuesta}, esperando…"
+            echo "attempt $i: HTTP ${code:-no answer}, waiting…"
             sleep 6
           done
-          test "${code:-000}" = "200" || { echo "index.html devuelve ${code:-000}"; exit 1; }
-          test -s /tmp/index.html || { echo "index.html vacío"; exit 1; }
-          # que sea la app y no una página de error disfrazada
-          grep -q '13 Lunas' /tmp/index.html || { echo "el HTML no parece la app"; exit 1; }
-          grep -q 'src="app.js"' /tmp/index.html || { echo "falta la referencia a app.js"; exit 1; }
+          test "${code:-000}" = "200" || { echo "index.html returns ${code:-000}"; exit 1; }
+          test -s /tmp/index.html || { echo "index.html is empty"; exit 1; }
+          # that it is the app and not an error page in disguise
+          grep -q '13 Lunas' /tmp/index.html || { echo "the HTML does not look like the app"; exit 1; }
+          grep -q 'src="app.js"' /tmp/index.html || { echo "app.js reference is missing"; exit 1; }
           for asset in app.js i18n.js; do
             curl -fsS "${url}${asset}" -o "/tmp/$asset"
-            test -s "/tmp/$asset" || { echo "$asset no se sirve"; exit 1; }
+            test -s "/tmp/$asset" || { echo "$asset is not served"; exit 1; }
             echo "$asset: $(wc -c < "/tmp/$asset") bytes"
           done
-          echo "publicado y legible: $url"
+          echo "published and readable: $url"
 
-      - name: Resumen
+      - name: Summary
         run: |
-          echo "### Publicado" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+          echo "### Published" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
           echo "${{ steps.deployment.outputs.page_url }}" >> "${GITHUB_STEP_SUMMARY:-/dev/null}"

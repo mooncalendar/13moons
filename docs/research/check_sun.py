@@ -6,10 +6,10 @@ RAD = math.pi / 180
 
 # USNO 2026 seasons (UTC)
 ref = [
-    ("Equinox marzo",   datetime(2026, 3, 20, 14, 46, tzinfo=timezone.utc), 0),
-    ("Solsticio junio", datetime(2026, 6, 21, 8, 24, tzinfo=timezone.utc), 90),
-    ("Equinoccio sept", datetime(2026, 9, 23, 0, 5, tzinfo=timezone.utc), 180),
-    ("Solsticio dic",   datetime(2026, 12, 21, 20, 50, tzinfo=timezone.utc), 270),
+    ("March equinox",   datetime(2026, 3, 20, 14, 46, tzinfo=timezone.utc), 0),
+    ("June solstice", datetime(2026, 6, 21, 8, 24, tzinfo=timezone.utc), 90),
+    ("Sept equinox", datetime(2026, 9, 23, 0, 5, tzinfo=timezone.utc), 180),
+    ("Dec solstice",   datetime(2026, 12, 21, 20, 50, tzinfo=timezone.utc), 270),
 ]
 print("Sol absolute longitude check (USNO seasons):")
 for name, dt, want in ref:
@@ -21,7 +21,7 @@ for name, dt, want in ref:
 # moon sign check for 2026-11-20 12:00 UTC
 dt = datetime(2026, 11, 20, 12, 0, tzinfo=timezone.utc)
 jd = jd_from_dt(dt)
-lm, bm = moon_pos(jd)          # sin corrección de DeltaT (UT directo)
+lm, bm = moon_pos(jd)          # no DeltaT correction (straight UT)
 ls = sun_pos(jd)
 print(f"\n2026-11-20 12Z: sun {ls:.3f}  moon {lm:.3f}  elong {((lm-ls)%360):.3f}")
-print(f"  signo: {lm/30:.3f} -> idx {int(lm//30)}  grado {lm%30:.2f}")
+print(f"  sign: {lm/30:.3f} -> idx {int(lm//30)}  degree {lm%30:.2f}")

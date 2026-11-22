@@ -1,15 +1,16 @@
-"""Sirve el artefacto como lo hará Pages y pasa la suite contra esa copia.
+"""Serve the artefact the way Pages will and run the suite against that copy.
 
-Replica los pasos del workflow: copia a un directorio temporal sólo
-`index.html`, `app.js` e `i18n.js`, los sirve bajo `/13moons/` en un puerto
-local y ejecuta `tests/check.py --base` apuntando ahí.
+Replicates the workflow steps: copy only `index.html`, `app.js` and `i18n.js`
+to a temporary directory, serve them under `/13moons/` on a local port and run
+`tests/check.py --base` pointing there.
 
-La diferencia con `tests/check.py` a secas es cuál es el original: la suite
-normal abre el directorio de trabajo con `file://` (donde conviven `tests/` y
-`docs/`), y esto comprueba justo lo que se publica —rutas relativas incluidas,
-porque el sitio cuelga de un subdirectorio y no de la raíz.
+The difference from plain `tests/check.py` is which copy is the original: the
+normal suite opens the working directory over `file://` (where `tests/` and
+`docs/` live side by side), and this checks exactly what gets published —
+relative paths included, because the site hangs off a subdirectory, not the
+root.
 
-Uso: python3 tests/check_served.py [-l es,de] [--shots]
+Usage: python3 tests/check_served.py [-l es,de] [--shots]
 """
 import functools
 import http.server
@@ -26,26 +27,26 @@ ROOT = os.path.join(WORK, 'pages')
 APP = os.path.join(ROOT, '13moons')
 FILES = ('index.html', 'app.js', 'i18n.js')
 
-# 1. el artefacto, igual que en el workflow
+# 1. the artefact, same as in the workflow
 shutil.rmtree(ROOT, ignore_errors=True)
 os.makedirs(APP)
 for f in FILES:
     src = os.path.join(BASE, f)
     if not os.path.isfile(src) or os.path.getsize(src) == 0:
-        sys.exit('falta %s' % f)
+        sys.exit('missing %s' % f)
     shutil.copy2(src, os.path.join(APP, f))
 open(os.path.join(APP, '.nojekyll'), 'w').close()
-print('artefacto: %s (%d archivos)' % (os.path.relpath(APP, BASE), len(FILES) + 1),
+print('artefact: %s (%d files)' % (os.path.relpath(APP, BASE), len(FILES) + 1),
       flush=True)
 
-# 2. servidor local en un puerto libre
+# 2. local server on a free port
 with socket.socket() as s:
     s.bind(('127.0.0.1', 0))
     PORT = s.getsockname()[1]
 
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *a):                      # sin ruido en la salida
+    def log_message(self, *a):                      # no noise in the output
         pass
 
 
@@ -53,9 +54,9 @@ handler = functools.partial(Quiet, directory=ROOT)
 srv = http.server.ThreadingHTTPServer(('127.0.0.1', PORT), handler)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 URL = 'http://127.0.0.1:%d/13moons' % PORT
-print('sirviendo: %s\n' % URL, flush=True)
+print('serving: %s\n' % URL, flush=True)
 
-# 3. la suite, contra el artefacto
+# 3. the suite, against the artefact
 try:
     rc = subprocess.call([sys.executable, os.path.join(BASE, 'tests', 'check.py'),
                           '--base', URL] + sys.argv[1:], cwd=BASE)

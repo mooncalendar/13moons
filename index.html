@@ -231,18 +231,17 @@
     .moonglow,svg.moon{width:212px;height:212px}
   }
 
-  /* ---------- las dos escalas del año ----------
-     Misma pieza para las 13 lunas y para los meses gregorianos: dos barras
-     segmentadas gemelas, sin hueco entre celdas (así el eje de días es
-     continuo y la raya del día cae en la misma x en las dos) y con el mismo
-     resalte, la misma raya y las mismas etiquetas. En pantalla estrecha las
-     dos hacen lo mismo: no se parten en filas, encogen y sueltan la segunda
-     línea. */
+  /* ---------- the two year scales ----------
+     One piece for both the 13 moons and the Gregorian months: twin segmented
+     bars, no gap between cells (so the day axis is continuous and the day
+     marker lands on the same x in both) and the same highlight, the same
+     marker and the same labels. On narrow screens both do the same: they do
+     not wrap into rows, they shrink and drop the second line. */
   .yscale{display:grid;gap:0;border:1px solid var(--line);border-radius:10px;
           overflow:hidden;background:rgba(255,255,255,.02);--yh:46px}
   .yscale + .yscale{margin-top:7px}
-  /* alto fijo, no mínimo: las dos filas miden lo mismo aunque una lleve un
-     número grande y la otra el nombre de un mes */
+  /* fixed height, not min: both rows measure the same even when one carries a
+     big number and the other the name of a month */
   .ycell{position:relative;min-width:0;height:var(--yh);padding:0 2px;
          display:flex;flex-direction:column;align-items:center;justify-content:center;
          text-align:center;border-right:1px solid rgba(255,255,255,.07);
@@ -256,8 +255,8 @@
   .ycell.cur{background:linear-gradient(180deg,rgba(229,192,123,.26),rgba(229,192,123,.08))}
   .ycell.cur .k{color:var(--gold)}
   .ycell.cur .s{color:rgba(229,192,123,.7)}
-  /* la raya del día: idéntica en las dos filas, con la flecha que apunta a la
-     fila de abajo para que se vea que las dos hablan del mismo día */
+  /* the day marker: identical in both rows, with the arrow pointing at the
+     row below so it reads as the same day in both */
   .ycell .ymark{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;z-index:1;
                 background:linear-gradient(180deg,rgba(229,192,123,.2),var(--gold));
                 box-shadow:0 0 10px rgba(229,192,123,.8)}
@@ -265,8 +264,8 @@
                        border-top:6px solid var(--gold);
                        border-left:5px solid transparent;border-right:5px solid transparent}
   .ycell .k,.ycell .s{position:relative;z-index:2}
-  /* en la fila gregoriana la cabecera es el mes, no un número: misma caja,
-     misma tipografía mono que la segunda línea de la luna */
+  /* in the Gregorian row the header is the month, not a number: same box,
+     same mono typeface as the second line of the moon */
   #gregTrack .ycell .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
                        text-transform:uppercase;color:var(--muted2)}
   #gregTrack .ycell.cur .k{color:var(--gold);font-weight:600}
@@ -277,7 +276,7 @@
     .ycell .s{display:none}
     #gregTrack .ycell .k{font-size:8.5px;letter-spacing:.02em}
   }
-  /* el rótulo del 25 de julio abre el desplegable de abajo */
+  /* the 25 July label opens the disclosure below */
   #stripEnd{cursor:pointer;border-bottom:1px dotted rgba(229,192,123,.4)}
   #stripEnd:hover{color:var(--gold);border-bottom-color:var(--gold)}
   .ysl,.glab{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;
@@ -290,7 +289,7 @@
     .ysl,.glab{font-size:9.5px;letter-spacing:.1em}
   }
 
-  /* explicación desplegable del día fuera del tiempo */
+  /* day-out-of-time disclosure */
   .dootx{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
   .dootx summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px;
                  padding:7px 0;
@@ -320,9 +319,9 @@
   .fade{animation:fade .5s ease both}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-  /* sin movimiento para quien lo pide al sistema: las tarjetas entran ya
-     visibles (si no, se quedan a media animación y en capturas sale todo
-     translúcido) */
+  /* no motion for those who ask the system for it: cards come in already
+     visible (otherwise they stop mid-animation and screenshots catch them
+     translucent) */
   @media (prefers-reduced-motion:reduce){
     .star{animation:none;opacity:.45}
     .fade{animation:none}
@@ -390,7 +389,7 @@
       </article>
     </section>
 
-    <!-- YEAR · el año de 13 lunas, justo debajo de la luna del año -->
+    <!-- YEAR · the 13-moon year, right below the moon of the year -->
     <section class="card fade" id="yearCard" style="margin-bottom:18px">
       <div class="calhead">
         <h2 id="yearTitle">—</h2>
@@ -409,7 +408,7 @@
       </details>
     </section>
 
-    <!-- GRID 3 · fases, zodíaco, firma -->
+    <!-- GRID 3 · phases, zodiac, signature -->
     <section class="grid3">
       <article class="card fade" id="phaseCard">
         <p class="eyebrow" data-i18n="phasesEyebrow">Ciclo sinódico · próximas fases</p>
@@ -457,7 +456,6 @@
       <div class="dow" id="dow"></div>
       <div class="days" id="days"></div>
     </section>
-
 
   </main>
 

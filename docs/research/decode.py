@@ -67,8 +67,8 @@ for i in range(rows):
 want = [34, 86, 31, 31, 207, 0, 5, 6, 22, 229, 3401, 180, 12, 30]
 labels = ['kin 1987-07-26', 'kin 2026-11-20', 'kin 2028-02-29', 'kin 2028-02-28',
           'kin 2012-12-21', 'moon 2026-07-25 (DFT)', 'moon 2026-11-20', 'day 2026-11-20',
-          'day 2028-02-29', 'kin portador 2026', 'lon*1000 2026-11-20', 'elong full moon',
-          'constel idx 3.39deg', 'dias nov 2026']
+          'day 2028-02-29', 'kin bearer 2026', 'lon*1000 2026-11-20', 'elong full moon',
+          'constel idx 3.39deg', 'days Nov 2026']
 ok = True
 for lab, got, wv in zip(labels, vals, want):
     st = 'OK' if got == wv else 'FAIL'

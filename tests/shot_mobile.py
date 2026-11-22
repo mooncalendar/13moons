@@ -1,4 +1,4 @@
-"""Captura a 390 px de ancho (móvil), guardada en tests/shots/."""
+"""Screenshot at 390 px wide (mobile), saved in tests/shots/."""
 import os
 import sys
 

@@ -1,248 +1,259 @@
-# Sincronario de las 13 Lunas — calendario lunar
+# Sincronario de las 13 Lunas — moon calendar
 
-Aplicación web estática (sin build, sin dependencias, sin API externa) que muestra
-**la Luna de hoy** desde tres lecturas a la vez:
+A static web app (no build step, no dependencies, no external API) that shows
+**today's moon** through three readings at once:
 
-1. **Fase lunar astronómica** — disco con terminador real, % iluminado, edad lunar y las
-   próximas cuatro fases con hora local.
-2. **Sincronario de las 13 Lunas (Dreamspell)** — luna del año (1–13), día 1–28,
-   heptada, kin del Tzolkin, onda encantada, castillo y guía.
-3. **Zodíaco** — signo tropical con grado y minuto + **constelación real** (límites IAU,
-   por eso aparece Ofiuco).
+1. **Astronomical lunar phase** — disc with a real terminator, % illuminated,
+   lunar age and the next four phases with local time.
+2. **Sincronario de las 13 Lunas (Dreamspell)** — moon of the year (1–13),
+   day 1–28, heptad, Tzolkin kin, wavespell, castle and guide.
+3. **Zodiac** — tropical sign with degree and minute + **real constellation**
+   (IAU boundaries, which is why Ophiuchus shows up).
 
-Y todo anclado al **calendario gregoriano**: fecha larga, calendario mensual con la
-doble fecha en cada celda, navegación por día/mes y enlace directo `?d=AAAA-MM-DD`.
+And all of it anchored to the **Gregorian calendar**: long date, monthly
+calendar with both dates in every cell, day/month navigation and a deep link
+`?d=YYYY-MM-DD`.
 
-Disponible en **español, português (BR), English y Deutsch**.
+Available in **Spanish, Português (BR), English and Deutsch**.
 
-## El año en dos calendarios
+## The year in two calendars
 
-Al final de la página, una tarjeta pone el año lunar y el año civil uno encima del
-otro para poder leerlos en vertical:
+At the bottom of the page a card stacks the 13-moon year and the civil year so
+they can be read vertically:
 
 ```
-       luna 4 · día 15                       20 nov 2026
-[ 1 ][ 2 ][ 3 ][ 4 ][ 5 ] · · · [ 13 ]   ← 13 lunas de 28 días
- 26 jul                  │   día fuera del tiempo · 25 jul
+       moon 4 · day 15                      20 Nov 2026
+[ 1 ][ 2 ][ 3 ][ 4 ][ 5 ] · · · [ 13 ]   ← 13 moons of 28 days
+ 26 Jul                  │   day out of time · 25 Jul
 ┌────┬─────┬─────┬─────┬─▲─────┬─────┬ · · ·  ┬────┐
-│ jul│ ago │ sep │ oct │ nov   │ dic │        │ jul│
+│ Jul│ Aug │ Sep │ Oct │ Nov   │ Dec │        │ Jul│
 └────┴─────┴─────┴─────┴───────┴─────┴ · · ·  ┴────┘
-  calendario gregoriano · 2026–2027    20 nov 2026
+  Gregorian calendar · 2026–2027       20 Nov 2026
 ```
 
-- La franja de abajo cubre **los mismos 364 días** (26 de julio → 24 de julio) pero
-  repartidos por meses reales: los tramos no son iguales (31, 30, 28 días) justo
-  para que se vea dónde cae cada luna respecto al mes civil. El 25 de julio, día
-  fuera del tiempo, queda fuera de las dos tiras y sólo aparece en la leyenda.
-- El **mes en curso** va resaltado en oro y el **día consultado** lo marca una raya
-  vertical con su flecha **en las dos escalas**: dentro de la luna (posición
-  `(día − ½) / 28` de la celda) y en la franja gregoriana (posición del día dentro
-  de los 364). Al navegar con las flechas del teclado, las dos rayas se mueven
-  juntas y siempre apuntan al mismo instante. En el día fuera del tiempo no hay raya
-  en ninguna de las dos, porque ese día no pertenece a ninguna luna.
-- Los tramos de mes se adaptan al hueco antes que recortarse: primero el nombre
-  corto (`sept.`), luego la inicial (`S`) y sólo si ni eso cabe, sin etiqueta. En
-  escritorio se leen los 13 nombres; en móvil, 12 iniciales y el trozo de julio de
-  6 días sin etiqueta.
+- The lower strip covers **the same 364 days** (26 July → 24 July) but spread
+  across real months: the segments are not equal (31, 30, 28 days) precisely so
+  you can see where each moon falls against the civil month. 25 July, the day
+  out of time, sits outside both strips and appears only in the legend.
+- The **current month** is highlighted in gold and the **selected day** is
+  marked by a vertical marker with an arrow **on both scales**: inside the moon
+  (position `(day − ½) / 28` of the cell) and in the Gregorian strip (position
+  of the day within the 364). Navigating with the keyboard arrows moves both
+  markers together, always pointing at the same instant. On the day out of time
+  there is no marker on either scale, because that day belongs to no moon.
+- Month segments adapt to the space before being cut: first the short name
+  (`Sept`), then the initial (`S`), and only if neither fits, no label. On
+  desktop all 13 names are readable; on mobile, 12 initials and the 6-day July
+  stretch with no label.
 
-## Idiomas
+## Languages
 
-El conmutador `ES · PT · EN · DE` está en la cabecera. El idioma se guarda en
-`localStorage` y se puede forzar por URL:
+The `ES · PT · EN · DE` switch sits in the header. The language is stored in
+`localStorage` and can be forced through the URL:
 
 ```
 index.html?lang=de
 index.html?lang=pt&d=2028-02-29
 ```
 
-- Todos los textos de interfaz viven en `i18n.js` (un objeto por idioma).
-- Los **nombres de meses y días** no están traducidos a mano: se generan con
-  `Intl.DateTimeFormat`, así que el orden («20 de noviembre» / «20 November» /
-  «20. November»), las abreviaturas y el formato de números y porcentajes
-  (`29,53` / `29.53`, `36 %` / `36%`) son los nativos de cada variante.
-- Los nombres del Sincronario (20 sellos, 13 tonos, 13 lunas, castillos, tótems)
-  también están traducidos. El orden de la firma cambia según el idioma
-  («Dragón Magnético Rojo» vs «Red Magnetic Dragon» / «Roter Magnetischer Drache»)
-  y los adjetivos concuerdan en género: portugués y español usan -o/-a
-  («Semente Magnética Vermelha»), el alemán declina -er/-e/-es
-  («Blaue Kristalline Hand», «Gelber Resonanter Stern»).
+- Every interface string lives in `i18n.js` (one object per language).
+- **Month and day names** are not translated by hand: they come from
+  `Intl.DateTimeFormat`, so the order ("20 de noviembre" / "20 November" /
+  "20. November"), the abbreviations and the number and percentage formats
+  (`29,53` / `29.53`, `36 %` / `36%`) are native to each variant.
+- The Sincronario names (20 seals, 13 tones, 13 moons, castles, totems) are
+  translated too. The signature order changes with the language
+  ("Dragón Magnético Rojo" vs "Red Magnetic Dragon" / "Roter Magnetischer
+  Drache") and the adjectives agree in gender: Portuguese and Spanish use
+  -o/-a ("Semente Magnética Vermelha"), German declines -er/-e/-es
+  ("Blaue Kristalline Hand", "Gelber Resonanter Stern").
 
-## Uso
+## Usage
 
 ```bash
-# cualquier servidor estático, o simplemente abrir el archivo
+# any static server, or simply open the file
 xdg-open index.html
 ```
 
-- `←` / `→` cambia de día, `T` vuelve a hoy.
-- `index.html?d=2028-02-29` abre una fecha concreta.
-- `index.html?lang=de` abre en alemán.
+- `←` / `→` change the day, `T` goes back to today.
+- `index.html?d=2028-02-29` opens a specific date.
+- `index.html?lang=de` opens in German.
 
-## Publicación
+## Publishing
 
-El sitio vive en **https://mooncalendar.github.io/13moons/**. Lo publica
-`.github/workflows/pages.yml` en cada push a `main` (o a mano desde la pestaña
-*Actions*, `workflow_dispatch`).
+The site lives at **https://mooncalendar.github.io/13moons/**. It is published
+by `.github/workflows/pages.yml` on every push to `main` (or by hand from the
+*Actions* tab, `workflow_dispatch`).
 
-**Antes del primer despliegue** hay que activar Pages una sola vez, a mano:
-*Settings → Pages → Source: GitHub Actions*. El workflow intenta activarlo por
-API, pero crear el sitio exige permiso de administración y el `GITHUB_TOKEN` no
-lo tiene; si falta, el flujo se corta en el paso «Comprobar que Pages está
-activado» con ese mensaje en vez de fallar más tarde con un error genérico.
+**Before the first deploy** Pages has to be enabled once, by hand:
+*Settings → Pages → Source: GitHub Actions*. The workflow tries to enable it
+through the API, but creating the site requires admin permission and
+`GITHUB_TOKEN` does not have it; if it is missing, the run stops at the "Check
+that Pages is enabled" step with that message instead of failing later with a
+generic error.
 
-El flujo copia a `_site` sólo lo que el navegador necesita —`index.html`,
-`app.js`, `i18n.js`— y nada de `tests/` ni `docs/`, para que el sitio publicado
-no lleve la suite dentro. Antes de empaquetar comprueba dos cosas: que los tres
-archivos existen y no están vacíos, y que cada `<script src>` del HTML resuelve
-dentro del artefacto; un archivo olvidado en el `cp` dejaría la página en blanco,
-así que el despliegue se corta ahí en lugar de publicar algo roto.
+The workflow copies only what the browser needs into `_site` —`index.html`,
+`app.js`, `i18n.js`— and nothing from `tests/` or `docs/`, so the published
+site does not carry the suite. Before packaging it checks two things: that the
+three files exist and are not empty, and that every `<script src>` in the HTML
+resolves inside the artefact; a file left out of the `cp` would leave the page
+blank, so the deploy stops there instead of publishing something broken.
 
-Las rutas de la app son todas relativas (`src="i18n.js"`), de modo que funciona
-igual servida desde la raíz que desde el subdirectorio `/13moons/`. Eso no se da
-por supuesto: `tests/check_served.py` monta el mismo artefacto, lo sirve por HTTP
-bajo `/13moons/` y le pasa la suite entera; `tests/check.py --base <url>` hace lo
-mismo contra el sitio ya publicado.
+The app's paths are all relative (`src="i18n.js"`), so it works the same served
+from the root or from the `/13moons/` subdirectory. That is not taken on trust:
+`tests/check_served.py` mounts the same artefact, serves it over HTTP under
+`/13moons/` and runs the whole suite against it; `tests/check.py --base <url>`
+does the same against the already published site.
 
-Después de desplegar, el propio workflow descarga la página y los dos scripts y
-falla si no responden 200 o si el HTML no es la app. Si Pages tarda en propagar,
-reintenta durante un minuto antes de darse por vencido.
+After deploying, the workflow itself downloads the page and both scripts and
+fails if they do not answer 200 or if the HTML is not the app. If Pages is slow
+to propagate, it retries for a minute before giving up.
 
-## Cómo se calcula (y cómo se verificó)
+## How it is calculated (and how it was verified)
 
-### Sincronario de 13 Lunas
+### 13-moon Sincronario
 
-| Pieza | Regla |
+| Piece | Rule |
 |---|---|
-| Año | 13 lunas × 28 días = 364 días + **Día Fuera del Tiempo** (25 de julio). Empieza el **26 de julio**. |
-| Luna / día | `(días desde el 26 de julio) / 28` + 1 → luna 1–13, día 1–28 |
-| Kin | Cuenta de 260 días desde el **26 de julio de 1987 = Kin 34** (Luna Magnética 1.1) |
-| 29 de febrero | **0.0 Hunab Ku**: comparte fecha y kin con el 28 de febrero y **no avanza la cuenta** (por eso el ciclo de 52 años cierra exacto) |
-| Sello / tono | `((kin-1) mod 20)+1` y `((kin-1) mod 13)+1` |
-| Onda encantada | `ceil(kin/13)` → sello que la nombra, posición `((kin-1) mod 13)+1` |
-| Castillo | 5 castillos de 52 días |
-| Guía | Tabla por tono del tutorial (mismo color que el sello) |
+| Year | 13 moons × 28 days = 364 days + **Day Out of Time** (25 July). Starts on **26 July**. |
+| Moon / day | `(days since 26 July) / 28` + 1 → moon 1–13, day 1–28 |
+| Kin | 260-day count from **26 July 1987 = Kin 34** (Magnetic Moon 1.1) |
+| 29 February | **0.0 Hunab Ku**: shares the date and kin with 28 February and **does not advance the count** (which is why the 52-year cycle closes exactly) |
+| Seal / tone | `((kin-1) mod 20)+1` and `((kin-1) mod 13)+1` |
+| Wavespell | `ceil(kin/13)` → naming seal, position `((kin-1) mod 13)+1` |
+| Castle | 5 castles of 52 days |
+| Guide | Per-tone table from the tutorial (same colour as the seal) |
 
-Verificación contra un calculador Dreamspell independiente (starroot.com, CGI):
+Checked against an independent Dreamspell calculator (starroot.com, CGI):
 
-| Fecha | Esperado | Resultado |
+| Date | Expected | Result |
 |---|---|---|
-| 1987-07-26 | Kin 34 · Luna 1.1 | ✅ |
-| 2026-11-20 | Kin 86 · Luna 5.6 | ✅ |
-| 2028-02-29 | Kin 31 · Luna 8.22 (= 28 feb) | ✅ |
-| 2012-12-21 | Kin 207 (Mano Cristal Azul) | ✅ |
+| 1987-07-26 | Kin 34 · Moon 1.1 | ✅ |
+| 2026-11-20 | Kin 86 · Moon 5.6 | ✅ |
+| 2028-02-29 | Kin 31 · Moon 8.22 (= 28 Feb) | ✅ |
+| 2012-12-21 | Kin 207 (Blue Crystal Hand) | ✅ |
 
-### Astronomía
+### Astronomy
 
-Series de Meeus implementadas en JS puro, corregidas de ΔT (TT vs UT):
+Meeus series implemented in plain JS, corrected for ΔT (TT vs UT):
 
-- **Longitud eclíptica lunar**: 39 términos principales de la serie ELP (Meeus cap. 47).
-- **Longitud solar**: fórmula de precisión 0.01° (cap. 25) con nutación y aberración.
-- **Fase**: elongación geocéntrica ψ; fracción iluminada = (1 − cos ψ)/2.
-- **Instantes de fase**: bisección sobre la elongación (precisión ±30 s de cálculo).
+- **Lunar ecliptic longitude**: 39 leading terms of the ELP series (Meeus ch. 47).
+- **Solar longitude**: 0.01° accuracy formula (ch. 25) with nutation and aberration.
+- **Phase**: geocentric elongation ψ; illuminated fraction = (1 − cos ψ)/2.
+- **Phase instants**: bisection on the elongation (±30 s of calculation precision).
 
-Contraste con datos oficiales del **USNO**:
+Cross-checked against official **USNO** data:
 
 ```
-Fases 2026 (UTC)          USNO      app      Δ
-Luna llena  24 nov 14:53  14:53     14:56    +3 min
-Luna nueva   9 nov 07:02  07:02     07:04    +2 min
-Cuarto crec. 17 nov 11:48 11:48     11:48     0 min
-Cuarto meng.  1 nov 20:28 20:28     20:29    +1 min
+Phases 2026 (UTC)         USNO      app      Δ
+Full moon   24 Nov 14:53  14:53     14:56    +3 min
+New moon     9 Nov 07:02  07:02     07:04    +2 min
+First qtr.  17 Nov 11:48  11:48     11:48     0 min
+Last qtr.    1 Nov 20:28  20:28     20:29    +1 min
 
-Longitud solar en los 4 ingresos estacionales de 2026: error ≤ 0.3′
+Solar longitude at the 4 seasonal ingresses of 2026: error ≤ 0.3′
 ```
 
-(Python de contraste en `research/`, ejecutable con `python3 research/verify.py`.)
+(Cross-check Python in `docs/research/`, runnable with
+`python3 docs/research/verify.py`.)
 
-### Constelaciones
+### Constellations
 
-Sectores reales de la eclíptica según los límites IAU:
+Real ecliptic sectors according to the IAU boundaries:
 
-| Constelación | desde | Constelación | desde |
+| Constellation | from | Constellation | from |
 |---|---|---|---|
 | Aries | 29.08° | Libra | 217.80° |
-| Tauro | 53.47° | Escorpio | 241.05° |
-| Géminis | 90.40° | **Ofiuco** | 247.79° |
-| Cáncer | 117.43° | Sagitario | 266.61° |
-| Leo | 138.02° | Capricornio | 299.71° |
-| Virgo | 173.93° | Acuario | 327.58° |
-| | | Piscis | 351.57° |
+| Taurus | 53.47° | Scorpius | 241.05° |
+| Gemini | 90.40° | **Ophiuchus** | 247.79° |
+| Cancer | 117.43° | Sagittarius | 266.61° |
+| Leo | 138.02° | Capricornus | 299.71° |
+| Virgo | 173.93° | Aquarius | 327.58° |
+| | | Pisces | 351.57° |
 
-El signo tropical y la constelación difieren ≈ 24° (precesión de los equinoccios):
-en 2026 el Sol está en Sagitario mientras astronómicamente recorre Escorpio/Ofiuco.
+The tropical sign and the constellation differ by ≈ 24° (precession of the
+equinoxes): in 2026 the Sun is in Sagittarius while astronomically it travels
+through Scorpius/Ophiuchus.
 
-## Verificación de la interfaz
+## Interface verification
 
-El motor se probó dentro del navegador (no solo en Python). Cada valor se codifica en
-un código de barras 2D que se lee desde un script y se compara con la referencia:
-
-```
-?barcode=1       → 14 valores: kin, luna, día, longitud, constelación…   → 14/14 OK
-?barcode=layout  → geometría real del DOM (anchos, scrollWidth, celdas)  → 0 desbordes
-?selftest=1      → informe de texto en pantalla
-?rects=1         → rectángulos de las piezas clave a la consola (geometría exacta)
-?dump=1          → volcado de `innerText` a la consola (revisión de traducciones)
-```
-
-Las cuatro lenguas se comprueban igual: `?selftest=1&lang=xx` (mismos kin, lunas y
-constelaciones en los cuatro) y `?barcode=layout&lang=xx` a 1280 px y a 390 px
-(7 columnas por fila, 13 lunas en la tira, 260 celdas del Tzolkin, 0 desbordes,
-13 tramos de mes que cubren el 100 % de la franja gregoriana, una sola raya de día
-en cada escala, la raya de la luna a la altura del día correcto y ninguna etiqueta
-saliéndose de su tramo).
-
-Todo eso está empaquetado en un solo comando, sin dependencias y en un Firefox
-headless real (no hay navegador simulado: los valores se leen de la captura):
+The engine was tested inside the browser (not only in Python). Every value is
+encoded in a 2D barcode that a script reads and compares with the reference:
 
 ```
-python3 tests/check.py            # datos + maquetación + autotest, en es/pt/en/de
-python3 tests/check.py --shots    # además capturas de página completa en tests/shots/
-python3 tests/check.py -l de      # un idioma suelto
-python3 tests/check.py --only doot   # el desplegable del día fuera del tiempo
-python3 tests/check.py --only thumb  # la miniatura de la pestaña, contada en píxeles
+?barcode=1       → 14 values: kin, moon, day, longitude, constellation…  → 14/14 OK
+?barcode=layout  → real DOM geometry (widths, scrollWidth, cells)         → 0 overflow
+?selftest=1      → text report on screen
+?rects=1         → rectangles of the key pieces to the console (exact geometry)
+?thumb=1         → the tab thumbnail at 240x240 on white (counted in pixels)
+?doot=1          → the day-out-of-time disclosure, opened and measured
+?dump=1          → `innerText` dump to the console (translation review)
 ```
 
-Y las sondas sueltas, para mirar un detalle concreto:
+All four languages are checked the same way: `?selftest=1&lang=xx` (same kin,
+moons and constellations in all four) and `?barcode=layout&lang=xx` at 1280 px
+and 390 px (7 columns per row, 13 moons in the strip, 260 Tzolkin cells, 0
+overflow, 13 month segments covering 100 % of the Gregorian strip, one day
+marker per scale, the moon marker at the right day and no label spilling out of
+its segment).
+
+All of that is packaged into a single command, no dependencies and a real
+headless Firefox (there is no simulated browser: the values are read from the
+screenshot):
 
 ```
-python3 tests/check_served.py                                     # el artefacto servido como en Pages
-python3 tests/check.py --base https://mooncalendar.github.io/13moons   # contra el sitio ya publicado
-python3 tests/shot_mobile.py es                                   # captura a 390 px
-python3 tests/verify_pixels.py 2026-11-01 79 1110 tests/shots/desktop_es.png
-python3 tests/markers.py                                          # rayas en 4 fechas
-python3 tests/rects.py 390 4200 es                                # geometría exacta
+python3 tests/check.py            # data + layout + selftest, in es/pt/en/de
+python3 tests/check.py --shots    # plus full-page screenshots in tests/shots/
+python3 tests/check.py -l de      # a single language
+python3 tests/check.py --only doot   # the day-out-of-time disclosure
+python3 tests/check.py --only thumb  # the tab thumbnail, counted in pixels
 ```
 
-Salida esperada: `TODO OK` y código de salida 0. Cada grupo imprime su recuento
-(`datos 14/14`, `layout … 0 desbordes`, `autotest 6/6 anclas`); si algo falla,
-se imprime el valor obtenido frente al esperado.
-
-## Estructura
+And the standalone probes, to look at one detail:
 
 ```
-index.html        estructura + sistema de diseño (CSS propio, tema oscuro)
-i18n.js           los cuatro idiomas: interfaz + sellos, tonos, lunas, castillos…
-app.js            astronomía + Dreamspell + render (sin cadenas de texto fijas)
+python3 tests/check_served.py                                          # the artefact served as on Pages
+python3 tests/check.py --base https://mooncalendar.github.io/13moons   # against the published site
+python3 tests/shot_mobile.py es                                        # screenshot at 390 px
+python3 tests/verify_pixels.py 2026-11-01 es 1280                      # pixels, both scales
+python3 tests/markers.py                                               # markers on 4 dates
+python3 tests/rects.py 390 4200 es                                     # exact geometry
+python3 tests/doot.py                                                  # same as --only doot
+python3 tests/thumb.py                                                 # same as --only thumb
+```
+
+Expected output: `ALL OK` and exit code 0. Each group prints its count
+(`data 14/14`, `layout … 0 overflow`, `selftest 6/6 anchors`); if anything
+fails, the value obtained is printed next to the expected one.
+
+## Structure
+
+```
+index.html        structure + design system (hand-written CSS, dark theme)
+i18n.js           the four languages: interface + seals, tones, moons, castles…
+app.js            astronomy + Dreamspell + render (no hard-coded copy)
 tests/
-  check.py        suite automática: datos, maquetación y autotest en cuatro idiomas
-  verify_pixels.py comprobación en píxeles sobre una captura ya hecha
-  markers.py      raya del día en las dos escalas, en varias fechas
-  rects.py        geometría exacta de las piezas clave (sonda ?rects=1)
-  shot_mobile.py  captura a 390 px de ancho
-  tools/          volcado ASCII de capturas y recuento de tinta por tramo
-docs/research/    prototipos de validación en Python (fase de diseño)
+  check.py        the suite: data, layout and selftest in four languages
+  verify_pixels.py pixel check on an already taken screenshot
+  markers.py      day marker on both scales, across several dates
+  rects.py        exact geometry of the key pieces (?rects=1 probe)
+  shot_mobile.py  screenshot at 390 px wide
+  doot.py         shortcut for --only doot
+  thumb.py        shortcut for --only thumb
+  tools/          ASCII dump of screenshots and ink count per segment
+docs/research/    Python validation prototypes (design phase)
 ```
 
-Sin dependencias: sólo Python 3 y un Firefox para las pruebas. La app en sí es
-estática — se abre `index.html` y funciona.
+No dependencies: just Python 3 and a Firefox for the tests. The app itself is
+static — open `index.html` and it works.
 
-## Fuentes
+## Sources
 
-- Tutorial del Sincronario de 13 Lunas (13lunas.net) — nombres, poderes, heptadas, plasmas.
-- Foundation for the Law of Time (lawoftime.org) — nombres y tótems de las 13 lunas, fechas.
-- Wikipedia, *Dreamspell* — estructura de 52 años, día Hunab Ku, numeración NS.
-- Jean Meeus, *Astronomical Algorithms* (2.ª ed.) — cap. 25, 47, 48, 49.
-- USNO Astronomical Applications API — fases y estaciones de 2026.
-- starroot.com — calculador Dreamspell de contraste.
+- Sincronario de 13 Lunas tutorial (13lunas.net) — names, powers, heptads, plasmas.
+- Foundation for the Law of Time (lawoftime.org) — names and totems of the 13 moons, dates.
+- Wikipedia, *Dreamspell* — 52-year structure, Hunab Ku day, NS numbering.
+- Jean Meeus, *Astronomical Algorithms* (2nd ed.) — ch. 25, 47, 48, 49.
+- USNO Astronomical Applications API — 2026 phases and seasons.
+- starroot.com — cross-check Dreamspell calculator.
 
-*El Sincronario es un sistema simbólico; no sustituye el calendario civil.*
+*The Sincronario is a symbolic system; it does not replace the civil calendar.*

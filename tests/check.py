@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Pruebas automáticas de moon-calendar.
+"""Automated tests for moon-calendar.
 
-Todo se comprueba en un Firefox headless real contra la página publicada,
-sin frameworks: la propia app expone tres modos de instrumentación vía URL
-(?selftest, ?barcode=1, ?barcode=layout) y aquí se leen de vuelta.
+Everything is checked in a real headless Firefox against the published page,
+no frameworks: the app itself exposes instrumented modes through the URL
+(?selftest, ?barcode=1, ?barcode=layout) and this reads them back.
 
-  python3 tests/check.py             # datos + maquetación + autotest, 4 idiomas
-  python3 tests/check.py --shots     # además capturas de página completa
-  python3 tests/check.py -l es,de    # sólo algunos idiomas
+  python3 tests/check.py             # data + layout + selftest, 4 languages
+  python3 tests/check.py --shots     # plus full-page screenshots
+  python3 tests/check.py -l es,de    # only some languages
 
-Salida: código 0 si todo pasa, 1 si algo falla.
+Exit code 0 if everything passes, 1 if anything fails.
 """
 
 import argparse
@@ -22,29 +22,29 @@ import sys
 import zlib
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# de dónde se sirve la página: por defecto el propio directorio (file://),
-# pero con --base se puede apuntar a cualquier URL — un servidor local o el
-# sitio ya publicado en Pages — y la misma suite comprueba ese original.
+# where the page is served from: this directory by default (file://), but
+# --base points at any URL — a local server or the site published on Pages —
+# and the same suite checks that original.
 URL_BASE = 'file://' + BASE
 WORK = os.path.join(BASE, 'tests', 'work')
 PROFILE = os.path.join(BASE, 'tests', 'profile')
 LANGS = ['es', 'pt', 'en', 'de']
 ENV = dict(os.environ, MOZ_HEADLESS='1')
 
-# valores que expone ?barcode=1, en orden (12 bits por celda).
-# (esperado, etiqueta, tolerancia opcional)
+# values exposed by ?barcode=1, in order (12 bits per cell).
+# (expected, label, optional tolerance)
 DATA_CASES = [
     (34, 'kin 1987-07-26', 0), (86, 'kin 2026-11-20', 0),
     (31, 'kin 2028-02-29', 0), (31, 'kin 2028-02-28', 0),
-    (207, 'kin 2012-12-21', 0), (0, 'luna del día fuera del tiempo', 0),
-    (5, 'luna 2026-11-20', 0), (6, 'día 2026-11-20', 0),
-    (22, 'día 2028-02-29', 0), (229, 'portador del año 2026', 0),
-    (3389, 'longitud lunar x1000', 50),      # ±0,05°: series distintas dan 3389–3401
-    (180, 'elongación luna llena', 1),
-    (12, 'índice constelación', 0), (30, 'días nov 2026', 0),
+    (207, 'kin 2012-12-21', 0), (0, 'moon on the day out of time', 0),
+    (5, 'moon 2026-11-20', 0), (6, 'day 2026-11-20', 0),
+    (22, 'day 2028-02-29', 0), (229, 'year bearer 2026', 0),
+    (3389, 'moon longitude x1000', 50),      # ±0.05°: different series give 3389–3401
+    (180, 'full moon elongation', 1),
+    (12, 'constellation index', 0), (30, 'days in Nov 2026', 0),
 ]
 
-# valores que expone ?barcode=layout, en orden (14 bits por celda)
+# values exposed by ?barcode=layout, in order (14 bits per cell)
 LAYOUT_NAMES = ['innerWidth', 'scrollWidth', 'scrollHeight', 'hero1.w', 'hero2.w',
                 'hero2.left', 'card1.w', 'card3.right', 'days/row', 'yearStrip',
                 'tzolkin', 'moonSvg.w', 'wheel.w', 'calCard.w', 'today', 'overflows',
@@ -55,21 +55,21 @@ LAYOUT_NAMES = ['innerWidth', 'scrollWidth', 'scrollHeight', 'hero1.w', 'hero2.w
 # --- utilidades ------------------------------------------------------------
 
 def ensure_profile():
-    """Perfil desechable de Firefox con la consola volcada a stdout."""
+    """Disposable Firefox profile with the console copied to stdout."""
     os.makedirs(PROFILE, exist_ok=True)
     prefs = os.path.join(PROFILE, 'user.js')
     want = ('user_pref("devtools.console.stdout.content", true);\n'
             'user_pref("browser.shell.checkDefaultBrowser", false);\n'
             'user_pref("datareporting.policy.dataSubmissionEnabled", false);\n'
             'user_pref("toolkit.telemetry.reportingpolicy.firstRun", false);\n'
-            # sin animaciones: si no, la captura sale a media entrada
+            # no animations: otherwise the screenshot catches them mid-entry
             'user_pref("ui.prefersReducedMotion", 1);\n')
     if not os.path.exists(prefs) or open(prefs).read() != want:
         open(prefs, 'w').write(want)
 
 
 def browser(url, png, w, h, capture=False):
-    """Abre `url` en Firefox headless; guarda captura y devuelve stdout."""
+    """Open `url` in headless Firefox; save the screenshot and return stdout."""
     ensure_profile()
     cmd = ['firefox', '--headless', '-no-remote', '--profile', PROFILE,
            '--window-size=%d,%d' % (w, h)]
@@ -83,9 +83,9 @@ def browser(url, png, w, h, capture=False):
 
 
 def read_png(path, max_rows=None):
-    """Decodifica un PNG de 8 bits (gris, rgb, rgba) a bytes; filtra por filas."""
+    """Decode an 8-bit PNG (grey, rgb, rgba) to bytes; optionally the first rows."""
     data = open(path, 'rb').read()
-    assert data[:8] == b'\x89PNG\r\n\x1a\n', 'no es un PNG: ' + path
+    assert data[:8] == b'\x89PNG\r\n\x1a\n', 'not a PNG: ' + path
     pos, idat, w, h, depth, ctype = 8, b'', None, None, None, None
     while pos < len(data):
         ln = struct.unpack('>I', data[pos:pos + 4])[0]
@@ -98,7 +98,7 @@ def read_png(path, max_rows=None):
         elif typ == b'IEND':
             break
         pos += 12 + ln
-    assert depth == 8, 'sólo 8 bits por canal (%s)' % path
+    assert depth == 8, 'only 8 bits per channel (%s)' % path
     ch = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}[ctype]
     raw = zlib.decompress(idat)
     stride = w * ch
@@ -133,7 +133,7 @@ def read_png(path, max_rows=None):
 
 
 def read_barcode(png, n, bits, cw):
-    """Lee `n` enteros de una tira de cuadros blancos/negros en el ángulo superior."""
+    """Read `n` integers from a strip of black/white squares in the top corner."""
     w, h, ch, px = read_png(png, max_rows=n * cw)
     vals = []
     for i in range(n):
@@ -149,7 +149,7 @@ def read_barcode(png, n, bits, cw):
 # --- pruebas ---------------------------------------------------------------
 
 def test_data(langs):
-    """El cálculo nativo (tzolkin, lunas, efemérides) coincide con las anclas."""
+    """The native calculation (tzolkin, moons, ephemerides) matches the anchors."""
     fails = 0
     for lang in langs:
         png = os.path.join(WORK, 'data_%s.png' % lang)
@@ -161,14 +161,14 @@ def test_data(langs):
         for lab, got, want in bad:
             print('  FAIL [%s] %-28s got %d, want %d' % (lang, lab, got, want))
         fails += bool(bad)
-        print('%s datos      %-2s  %d/%d' % ('OK  ' if not bad else 'FAIL',
+        print('%s data       %-2s  %d/%d' % ('OK  ' if not bad else 'FAIL',
                                             lang, len(DATA_CASES) - len(bad),
                                             len(DATA_CASES)))
     return fails
 
 
 def test_layout(langs):
-    """Sin desbordes horizontales ni cajas desbordadas, en escritorio y móvil."""
+    """No horizontal overflow and no overflowing boxes, on desktop and mobile."""
     fails = 0
     for lang in langs:
         for w, h, tag in [(1280, 900, 'desk'), (390, 844, 'mob')]:
@@ -181,64 +181,64 @@ def test_layout(langs):
             if g['innerWidth'] != w:
                 bad.append('viewport %d != %d' % (g['innerWidth'], w))
             if g['scrollWidth'] > g['innerWidth'] + 1:
-                bad.append('scroll horizontal %d > %d' % (g['scrollWidth'], g['innerWidth']))
+                bad.append('horizontal scroll %d > %d' % (g['scrollWidth'], g['innerWidth']))
             if g['overflows']:
-                bad.append('%d cajas desbordadas' % g['overflows'])
+                bad.append('%d overflowing boxes' % g['overflows'])
             if g['tzolkin'] != 260:
-                bad.append('células tzolkin %d' % g['tzolkin'])
+                bad.append('tzolkin cells %d' % g['tzolkin'])
             if g['yearStrip'] != 13:
-                bad.append('células tira anual %d' % g['yearStrip'])
+                bad.append('year strip cells %d' % g['yearStrip'])
             if g['days/row'] != 7:
-                bad.append('días por fila %d' % g['days/row'])
+                bad.append('days per row %d' % g['days/row'])
             if g['today'] != 1:
-                bad.append('marcas de hoy %d' % g['today'])
+                bad.append('today marks %d' % g['today'])
             if g['card3.right'] > g['innerWidth']:
-                bad.append('tercera tarjeta fuera del viewport')
-            # franja gregoriana paralela
+                bad.append('third card outside the viewport')
+            # parallel Gregorian strip
             if g['gregSegs'] != 13:
-                bad.append('tramos gregorianos %d (26 jul-24 jul = 13)' % g['gregSegs'])
+                bad.append('Gregorian segments %d (26 Jul-24 Jul = 13)' % g['gregSegs'])
             if not 98 <= g['gregWidth%'] <= 101:
-                bad.append('franja gregoriana cubre %d%% del ancho' % g['gregWidth%'])
+                bad.append('Gregorian strip covers %d%% of the width' % g['gregWidth%'])
             if g['gregMarker'] != 1:
-                bad.append('marcadores de día %d' % g['gregMarker'])
+                bad.append('day markers %d' % g['gregMarker'])
             if g['gregCur'] != 1:
-                bad.append('meses activos %d' % g['gregCur'])
+                bad.append('active months %d' % g['gregCur'])
             if g['gregLabelOut']:
-                bad.append('%d etiquetas de mes se salen de su tramo' % g['gregLabelOut'])
+                bad.append('%d month labels spill out of their segment' % g['gregLabelOut'])
             if g['greg.left'] < 0 or g['greg.left'] + g['greg.w'] > g['innerWidth']:
-                bad.append('franja gregoriana fuera del viewport (%d+%d > %d)'
+                bad.append('Gregorian strip outside the viewport (%d+%d > %d)'
                            % (g['greg.left'], g['greg.w'], g['innerWidth']))
             if g['greg.w'] < 200:
-                bad.append('franja gregoriana demasiado estrecha (%d px)' % g['greg.w'])
-            # la raya tiene que estar en las dos escalas y en el mismo día
-            # (la sonda usa d=2026-11-01: luna 4, día 15 -> 51,8 % de la luna)
+                bad.append('Gregorian strip too narrow (%d px)' % g['greg.w'])
+            # the marker has to be on both scales and on the same day
+            # (the probe uses d=2026-11-01: moon 4, day 15 -> 51.8% of the moon)
             if g['ymoonMark'] != 1:
-                bad.append('rayas en la tira de las lunas: %d' % g['ymoonMark'])
+                bad.append('markers in the moon strip: %d' % g['ymoonMark'])
             if abs(g['ymoonPos%'] - 52) > 3:
-                bad.append('raya de la luna al %d%% (esperado 52%%)' % g['ymoonPos%'])
-            # las dos escalas, comparables en vertical: misma x (±1 px)
+                bad.append('moon marker at %d%% (expected 52%%)' % g['ymoonPos%'])
+            # both scales, comparable vertically: same x (±1 px)
             if g['markDelta'] > 1:
-                bad.append('las dos rayas no coinciden: %d px de desfase' % g['markDelta'])
+                bad.append('the two markers disagree: %d px apart' % g['markDelta'])
             for b in bad:
                 print('  FAIL [%s/%s] %s' % (lang, tag, b))
             fails += bool(bad)
-            print('%s layout     %-2s %-4s alto %dpx  hero %d/%d  calendario %d  meses %d/%d%%'
+            print('%s layout     %-2s %-4s height %dpx  hero %d/%d  calendar %d  months %d/%d%%'
                   % ('OK  ' if not bad else 'FAIL', lang, tag,
                      g['scrollHeight'], g['hero1.w'], g['hero2.w'], g['calCard.w'],
                      g['gregSegs'], g['gregWidth%']))
-            print('     franja gregoriana x=%d..%d  %d px de ancho · raya luna al %d%%'
+            print('     Gregorian strip x=%d..%d  %d px wide · moon marker at %d%%'
                   % (g['greg.left'], g['greg.left'] + g['greg.w'], g['greg.w'], g['ymoonPos%']))
     return fails
 
 
 def test_selftest(langs):
-    """El autotest de la app no imprime ningún FAIL y los nombres están traducidos."""
+    """The app self-test prints no FAIL and the names come out translated."""
     fails = 0
     for lang in langs:
         url = '%s/index.html?selftest=1&lang=%s' % (URL_BASE, lang)
         shot = os.path.join(WORK, 'selftest_%s.png' % lang)
-        # sin --screenshot Firefox queda abierto; la captura además deja
-        # el panel del autotest como registro visual en tests/work/
+        # without --screenshot Firefox stays open; the capture also leaves
+        # the self-test panel as a visual record in tests/work/
         out = browser(url, shot, 980, 470, capture=True)
         text = ''
         for line in out.splitlines():
@@ -248,9 +248,9 @@ def test_selftest(langs):
                 except (ValueError, SyntaxError):
                     pass
         if not text:
-            print('  FAIL [%s] no se capturó la consola' % lang)
+            print('  FAIL [%s] console output not captured' % lang)
             fails += 1
-            print('FAIL autotest   %-2s  sin salida' % lang)
+            print('FAIL selftest   %-2s  no output' % lang)
             continue
         cases = [l for l in text.splitlines() if l.startswith(('OK ', 'FAIL '))]
         bad = [l for l in cases if l.startswith('FAIL')]
@@ -258,21 +258,21 @@ def test_selftest(langs):
             print('  FAIL [%s] %s' % (lang, l))
         first = text.splitlines()[0] if text else ''
         if not first.startswith('lang=%s' % lang):
-            bad.append('idioma de la página: %r' % first)
+            bad.append('page language: %r' % first)
             print('  FAIL [%s] %s' % (lang, first))
-        # el nombre del sello y la fase lunar deben estar traducidos, no en inglés fijo
+        # the seal name and the moon phase must be translated, not fixed English
         if lang == 'de' and 'Blauer' not in text and 'Gelber' not in text:
-            print('  FAIL [%s] nombres de sellos sin traducir' % lang)
-            bad.append('sellos')
+            print('  FAIL [%s] seal names not translated' % lang)
+            bad.append('seals')
         fails += bool(bad)
-        print('%s autotest   %-2s  %d/%d anclas'
+        print('%s selftest   %-2s  %d/%d anchors'
               % ('OK  ' if not bad else 'FAIL', lang,
                  len(cases) - len([l for l in bad if l.startswith('FAIL')]), len(cases)))
     return fails
 
 
 def test_shots(langs):
-    """Capturas de página completa por idioma (revisión visual)."""
+    """Full-page screenshots per language (visual review)."""
     outdir = os.path.join(BASE, 'tests', 'shots')
     os.makedirs(outdir, exist_ok=True)
     fails = 0
@@ -289,65 +289,65 @@ def test_shots(langs):
         dark = sum(1 for i in range(0, len(px), ch * 37) if px[i] < 200)
         ok = os.path.getsize(png) > 40000 and dark > 0
         fails += not ok
-        print('%s captura    %-2s  %dx%d  %.0f KB'
+        print('%s shot       %-2s  %dx%d  %.0f KB'
               % ('OK  ' if ok else 'FAIL', lang, w, h, os.path.getsize(png) / 1024.0))
-    print('  guardadas en %s' % os.path.relpath(outdir, BASE))
+    print('  saved in %s' % os.path.relpath(outdir, BASE))
     return fails
 
 
 def test_doot(langs):
-    """El desplegable del día fuera del tiempo, en cada idioma y en los dos anchos.
+    """The day-out-of-time disclosure, in every language and at both widths.
 
-    Sin red: comprueba que exista, que se abra, que traiga los cuatro párrafos y
-    las cuatro fuentes, que los enlaces sean https con rel="noopener", que no
-    desborde y que el texto venga traducido (no el respaldo en español).
+    Offline: checks that it exists, opens, brings the four paragraphs and the
+    four sources, that the links are https with rel="noopener", that nothing
+    overflows and that the text is translated (not the Spanish fallback).
     """
-    # marcas sin acentos: la consola de Firefox escapa lo que no es ASCII
-    MARCA = {'es': 'fuera del tiempo', 'pt': 'fora do tempo',
+    # accent-free marks: the Firefox console escapes anything not ASCII
+    MARK = {'es': 'fuera del tiempo', 'pt': 'fora do tempo',
              'en': 'out of time', 'de': 'Zeit'}
-    fallos = 0
+    fails = 0
     for lang in langs:
         for w, h, tag in [(1280, 3200, 'desk'), (390, 4400, 'mob')]:
             png = os.path.join(WORK, 'doot_%s_%s.png' % (lang, tag))
             out = browser('%s/index.html?doot=1&lang=%s&d=2026-11-01' % (URL_BASE, lang),
                           png, w, h, capture=True)
-            linea = next((l for l in out.splitlines() if 'doot open=' in l), '')
-            m = re.search(r'p=(\d+) a=(\d+)', linea)
-            m2 = re.search(r'doot desbordes=(\d+) scrollW=(\d+) innerW=(\d+)', out)
-            texto = next((l for l in out.splitlines() if 'doot texto:' in l), '')
-            enlaces = [(hh, rr, tt.strip('"').strip('\\'))
+            line = next((l for l in out.splitlines() if 'doot open=' in l), '')
+            m = re.search(r'p=(\d+) a=(\d+)', line)
+            m2 = re.search(r'doot overflows=(\d+) scrollW=(\d+) innerW=(\d+)', out)
+            text = next((l for l in out.splitlines() if 'doot text:' in l), '')
+            links = [(hh, rr, tt.strip('"').strip('\\'))
                        for hh, rr, tt in re.findall(
                            r'doot link (\S+) rel=(\S+) target=(\S+)', out)]
 
-            mal = []
+            bad = []
             if not m or m.group(1) != '4' or m.group(2) != '4':
-                mal.append('párrafos/enlaces %s' % (m.groups() if m else 'sin sonda'))
+                bad.append('paragraphs/links %s' % (m.groups() if m else 'no probe'))
             if not m2:
-                mal.append('sin medidas')
+                bad.append('no measurements')
             else:
-                desbordes, sw, iw = (int(x) for x in m2.groups())
-                if desbordes:
-                    mal.append('%d cajas desbordadas' % desbordes)
+                overflows, sw, iw = (int(x) for x in m2.groups())
+                if overflows:
+                    bad.append('%d overflowing boxes' % overflows)
                 if sw > iw + 1:
-                    mal.append('scroll horizontal %d > %d' % (sw, iw))
-            if len(enlaces) != 4:
-                mal.append('%d enlaces leídos' % len(enlaces))
-            for href, rel, target in enlaces:
+                    bad.append('scroll horizontal %d > %d' % (sw, iw))
+            if len(links) != 4:
+                bad.append('%d links leídos' % len(links))
+            for href, rel, target in links:
                 if not href.startswith('https://'):
-                    mal.append('enlace no https: %s' % href)
+                    bad.append('link not https: %s' % href)
                 if rel != 'noopener':
-                    mal.append('rel=%s en %s' % (rel, href))
+                    bad.append('rel=%s en %s' % (rel, href))
                 if target != '_blank':
-                    mal.append('target=%s en %s' % (target, href))
-            if MARCA.get(lang, 'fuera del tiempo').lower() not in texto.lower():
-                mal.append('texto no traducido')
+                    bad.append('target=%s en %s' % (target, href))
+            if MARK.get(lang, 'fuera del tiempo').lower() not in text.lower():
+                bad.append('text no traducido')
 
-            fallos += bool(mal)
+            fails += bool(bad)
             print('%s doot       %-2s %-4s %s'
-                  % ('OK  ' if not mal else 'FAIL', lang, tag,
-                     '4 párrafos · 4 fuentes https+noopener · sin desbordes'
-                     if not mal else ' · '.join(mal)))
-    return fallos
+                  % ('OK  ' if not bad else 'FAIL', lang, tag,
+                     '4 paragraphs · 4 https+noopener sources · no overflow'
+                     if not bad else ' · '.join(bad)))
+    return fails
 
 
 def test_thumb(langs):
@@ -359,12 +359,12 @@ def test_thumb(langs):
     left while waning. The `fallback` case uses the static href from
     index.html: a last-quarter moon, left half lit.
     """
-    def medir(png):
+    def measure(png):
         w, h, ch, px = read_png(png)
         cx, cy = w / 2.0, h / 2.0
-        r_disco = 13 * (w / 32.0)          # 97.5 px at 240
-        r_max = r_disco * 0.97             # nearly to the edge, past the rim
-        claro = oscuro = 0
+        r_disc = 13 * (w / 32.0)          # 97.5 px at 240
+        r_max = r_disc * 0.97             # nearly to the edge, past the rim
+        lit = dark = 0
         xs = []
         for y in range(h):
             dy = y - cy
@@ -377,78 +377,78 @@ def test_thumb(langs):
                 i = (y * w + x) * ch
                 r, g, b = px[i], px[i + 1], px[i + 2]
                 if (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 > 0.5:
-                    claro += 1
+                    lit += 1
                     xs.append(x)
                 else:
-                    oscuro += 1
-        total = claro + oscuro
-        lado = (sum(xs) / len(xs) - cx) / r_disco if xs else 0.0
-        return (claro / total if total else 0.0), lado
+                    dark += 1
+        total = lit + dark
+        side = (sum(xs) / len(xs) - cx) / r_disc if xs else 0.0
+        return (lit / total if total else 0.0), side
 
-    CASOS = [('2026-11-05', 'thin waxing'), ('2026-11-20', 'waxing'),
+    CASES = [('2026-11-05', 'thin waxing'), ('2026-11-20', 'waxing'),
              ('2026-11-24', 'full'), ('2026-12-01', 'waning'),
              ('2026-11-11', 'new')]
-    fallos = 0
+    fails = 0
     print('     date         phase           k app  k seen   side')
     for lang in langs[:1]:
-        for d, nombre in CASOS:
+        for d, name in CASES:
             png = os.path.join(WORK, 'thumb_%s.png' % d)
             out = browser('%s/index.html?thumb=1&lang=%s&d=%s' % (URL_BASE, lang, d),
                           png, 240, 240, capture=True)
             m = re.search(r'k=([\d.]+) waxing=(\d)', out)
             if not m:
                 print('FAIL thumb      %-12s no probe output' % d)
-                fallos += 1
+                fails += 1
                 continue
             k_app, waxing = float(m.group(1)), int(m.group(2))
-            k_med, lado = medir(png)
-            mal = []
+            k_med, side = measure(png)
+            bad = []
             if abs(k_med - k_app) > 0.08:
-                mal.append('lit %.2f vs %.2f' % (k_med, k_app))
+                bad.append('lit %.2f vs %.2f' % (k_med, k_app))
             if 0.20 < k_app < 0.80:
-                if waxing and lado < 0.1:
-                    mal.append('waxing but lit on the left')
-                if not waxing and lado > -0.1:
-                    mal.append('waning but lit on the right')
-            fallos += bool(mal)
+                if waxing and side < 0.1:
+                    bad.append('waxing but lit on the left')
+                if not waxing and side > -0.1:
+                    bad.append('waning but lit on the right')
+            fails += bool(bad)
             print('%s thumb      %-12s %-14s %.3f  %.3f    %+.2f  %s'
-                  % ('OK  ' if not mal else 'FAIL', d, nombre, k_app, k_med, lado,
-                     'thumbnail matches' if not mal else ' · '.join(mal)))
+                  % ('OK  ' if not bad else 'FAIL', d, name, k_app, k_med, side,
+                     'thumbnail matches' if not bad else ' · '.join(bad)))
 
     # the static fallback: last quarter, left half lit
     png = os.path.join(WORK, 'thumb_fallback.png')
     browser('%s/index.html?thumb=fallback&lang=%s&d=2026-11-20' % (URL_BASE, langs[0]),
             png, 240, 240, capture=True)
-    k_med, lado = medir(png)
-    mal = []
+    k_med, side = measure(png)
+    bad = []
     if abs(k_med - 0.5) > 0.06:
-        mal.append('not a half moon (%.2f)' % k_med)
-    if lado > -0.15:
-        mal.append('lit on the wrong side')
-    fallos += bool(mal)
+        bad.append('not a half moon (%.2f)' % k_med)
+    if side > -0.15:
+        bad.append('lit on the wrong side')
+    fails += bool(bad)
     print('%s thumb      %-12s %-14s %.3f  %.3f    %+.2f  %s'
-          % ('OK  ' if not mal else 'FAIL', '(no JS)', 'fallback', 0.5, k_med, lado,
-             'last quarter' if not mal else ' · '.join(mal)))
-    return fallos
+          % ('OK  ' if not bad else 'FAIL', '(no JS)', 'fallback', 0.5, k_med, side,
+             'last quarter' if not bad else ' · '.join(bad)))
+    return fails
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Pruebas de moon-calendar')
+    ap = argparse.ArgumentParser(description='moon-calendar test suite')
     ap.add_argument('-l', '--langs', default=','.join(LANGS),
-                    help='idiomas separados por coma (por defecto: %s)' % ','.join(LANGS))
-    ap.add_argument('--shots', action='store_true', help='capturas de página completa')
+                    help='comma-separated languages (default: %s)' % ','.join(LANGS))
+    ap.add_argument('--shots', action='store_true', help='full-page screenshots')
     ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot',
                                        'thumb', 'shots'],
-                    help='ejecutar sólo un grupo de pruebas')
+                    help='run a single test group')
     ap.add_argument('--base',
-                    help='URL donde se sirve la app (por defecto: este directorio, '
-                         'p. ej. --base https://mooncalendar.github.io/13moons)')
+                    help='URL the app is served from (default: this directory, '
+                         'e.g. --base https://mooncalendar.github.io/13moons)')
     args = ap.parse_args()
 
     global URL_BASE
     if args.base:
         URL_BASE = args.base.rstrip('/')
-        print('origen: %s' % URL_BASE)
+        print('origin: %s' % URL_BASE)
 
     langs = [l.strip() for l in args.langs.split(',') if l.strip()]
     os.makedirs(WORK, exist_ok=True)
@@ -464,7 +464,7 @@ def main():
     for _, fn in groups:
         fails += fn(langs)
 
-    print('\n%s' % ('TODO OK' if fails == 0 else '%d grupos con fallos' % fails))
+    print('\n%s' % ('ALL OK' if fails == 0 else '%d groups with failures' % fails))
     return 1 if fails else 0
 
 

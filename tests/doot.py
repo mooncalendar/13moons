@@ -1,6 +1,6 @@
-"""Atajo: el desplegable del día fuera del tiempo vive ahora en check.py.
+"""Shortcut: the day-out-of-time disclosure now lives in check.py.
 
-`python3 tests/doot.py` sigue funcionando y equivale a
+`python3 tests/doot.py` still works and is the same as
 `python3 tests/check.py --only doot`.
 """
 import os

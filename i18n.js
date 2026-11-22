@@ -1,8 +1,8 @@
 /* ============================================================
-   i18n.js — cuatro idiomas: es · pt-BR · en · de
-   Los nombres de meses y días NO están aquí: se generan con
-   Intl.DateTimeFormat para respetar el orden y la declinación
-   de cada idioma.
+   i18n.js — four languages: es · pt-BR · en · de
+   Month and day names are NOT here: they come from
+   Intl.DateTimeFormat so each language keeps its own order
+   and declension.
    ============================================================ */
 'use strict';
 
@@ -15,15 +15,15 @@ const LANGS = [
   { code: 'de', tag: 'DE', name: 'Deutsch' }
 ];
 
-// Los cuatro colores del Dreamspell, en orden cíclico por sello.
+// The four Dreamspell colours, in cyclic order per seal.
 const SEAL_COLORS = ['rojo', 'blanco', 'azul', 'amarillo'];
 
 const I18N = {
 
-  /* ============================== ESPAÑOL ============================== */
+  /* ============================== SPANISH ============================== */
   es: {
     sigOrder: 'stc',
-    // m/f de cada sello: decide si el adjetivo acaba en -o o en -a
+    // m/f of each seal: decides whether the adjective ends in -o or -a
     gender: ['m','m','f','f','f','m','f','f','f','m','m','m','m','m','f','m','f','m','f','m'],
     colors: { rojo: 'Rojo', blanco: 'Blanco', azul: 'Azul', amarillo: 'Amarillo' },
     ui: {
@@ -153,7 +153,7 @@ const I18N = {
       'Luna llena', 'Gibosa menguante', 'Cuarto menguante', 'Luna menguante']
   },
 
-  /* ========================== PORTUGUÊS (BR) =========================== */
+  /* ========================= PORTUGUESE (BR) ========================== */
   pt: {
     sigOrder: 'stc',
     gender: ['m','m','f','f','f','m','f','f','f','m','m','m','m','m','f','m','f','m','f','m'],
@@ -416,11 +416,11 @@ const I18N = {
       'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent']
   },
 
-  /* =============================== DEUTSCH ============================= */
+  /* =============================== GERMAN ============================== */
   de: {
     sigOrder: 'cts',
-    // El alemán declina: se guarda la raíz y el género del sello.
-    // raíz + er (m) / e (f) / es (n)
+    // German declines: the stem and the gender of the seal are stored.
+    // stem + er (m) / e (f) / es (n)
     gender: ['m','m','f','m','f','m','f','m','m','m','m','m','m','m','m','m','f','m','m','f'],
     adjColors: { rojo: 'rot', blanco: 'weiß', azul: 'blau', amarillo: 'gelb' },
     adjTones: ['magnetisch', 'lunar', 'elektrisch', 'selbstbestehend', 'übertönend',
@@ -627,7 +627,7 @@ function fmtDate(date, opts) {
   return new Intl.DateTimeFormat(LOCALES[LANG], opts).format(date);
 }
 
-/* Aplica los textos estáticos marcados con data-i18n en el HTML. */
+/* Applies the static texts marked with data-i18n in the HTML. */
 function applyStaticText() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     el.innerHTML = t(el.dataset.i18n);

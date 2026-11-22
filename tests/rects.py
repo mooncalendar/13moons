@@ -1,4 +1,4 @@
-"""Geometría exacta de las piezas clave, volcada desde ?rects=1."""
+"""Exact geometry of the key pieces, dumped from ?rects=1."""
 import os
 import re
 import sys
