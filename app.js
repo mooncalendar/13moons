@@ -362,14 +362,36 @@ const FALLBACK_ICON = (() => {
   return link ? link.getAttribute('href') : '';
 })();
 
+// Craters, in the unit disc, only on the lit face (clipped), so they read as
+// surface rather than as holes on the dark limb. Spread over both halves, so
+// every phase keeps a few visible; the same list is in the static href in
+// index.html (it has to exist before this script runs) — tests/check.py
+// checks both render the same detail.
+const ICON_CRATERS = [[0.34, -0.28, 0.155], [-0.32, -0.36, 0.120],
+                      [-0.18, 0.34, 0.140], [0.40, 0.24, 0.100],
+                      [0.02, -0.04, 0.095], [-0.54, 0.10, 0.075]];
+
 function faviconSVG(k, waxing) {
+  const lit = moonPath(k, waxing);
+  const craters = ICON_CRATERS
+    .map(c => `<circle cx='${c[0]}' cy='${c[1]}' r='${c[2]}'/>`).join('');
   return "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+    // 13 segments in the ring, one per moon of the year
+    + "<defs><linearGradient id='lit' x1='.3' y1='.05' x2='.85' y2='1'>"
+    + "<stop offset='0' stop-color='#fffaf0'/>"
+    + "<stop offset='1' stop-color='#dccdae'/></linearGradient>"
+    + "<clipPath id='face'><path d='" + lit + "'/></clipPath></defs>"
     + "<circle cx='16' cy='16' r='15' fill='#090a12'/>"
+    + "<circle cx='16' cy='16' r='13.9' fill='none' stroke='#e5c07b'"
+    + " stroke-opacity='.6' stroke-width='1.1' stroke-dasharray='4 2.72'"
+    + " transform='rotate(-81.76 16 16)'/>"
     + "<g transform='translate(16 16) scale(13)'>"
     + "<circle r='1' fill='#252a42'/>"
-    + "<path d='" + moonPath(k, waxing) + "' fill='#f0e4c6'/></g>"
-    + "<circle cx='16' cy='16' r='14.2' fill='none'"
-    + " stroke='#e5c07b' stroke-opacity='.5'/></svg>";
+    + "<circle r='.95' fill='none' stroke='#3d4568' stroke-opacity='.55'"
+    + " stroke-width='.1'/>"
+    + "<path d='" + lit + "' fill='url(#lit)'/>"
+    + "<g clip-path='url(#face)' fill='#d6c6a4' fill-opacity='.8'>"
+    + craters + "</g></g></svg>";
 }
 
 function setFavicon(k, waxing) {

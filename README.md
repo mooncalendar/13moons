@@ -79,7 +79,7 @@ xdg-open index.html
 - `index.html?d=2028-02-29` opens a specific date.
 - `index.html?lang=de` opens in German.
 
-### The date bar
+### The date bar and the tab icon
 
 The date controls are **sticky**: they pin to the top edge once the page is
 scrolled, so a date can be changed from anywhere, and they only paint their
@@ -87,6 +87,15 @@ glass background while pinned (the top of the page stays clean). Nothing above
 them may scroll horizontally — `overflow-x: clip` on `body` rather than
 `hidden`, which would turn the body into a scroll container and silently break
 `position: sticky`.
+
+The tab icon is drawn, not an image: the 13-segment gold ring counts the moons
+of the year, the disc shows the moon of the day being viewed (same `moonPath()`
+as the big disc, so it waxes and wanes with the date) and the craters are
+clipped to the lit face, so they only appear on the side the Sun is hitting.
+The static copy in `index.html` is what the browser shows before the script
+runs; `tests/check.py --only favicon` renders both at 512 px and counts the
+ring segments and the crater pixels, with the crater group stripped as a
+control.
 
 ## Publishing
 
@@ -226,6 +235,7 @@ python3 tests/check.py --shots    # plus full-page screenshots in tests/shots/
 python3 tests/check.py -l de      # a single language
 python3 tests/check.py --only doot   # the day-out-of-time disclosure
 python3 tests/check.py --only sticky # the date bar stays pinned
+python3 tests/check.py --only favicon # ring segments + craters, counted in pixels
 python3 tests/check.py --only thumb  # the tab thumbnail, counted in pixels
 ```
 
@@ -253,7 +263,7 @@ index.html        structure + design system (hand-written CSS, dark theme)
 i18n.js           the four languages: interface + seals, tones, moons, castles…
 app.js            astronomy + Dreamspell + render (no hard-coded copy)
 tests/
-  check.py        the suite: data, layout, selftest, doot, sticky, thumb
+  check.py        the suite: data, layout, selftest, doot, sticky, favicon, thumb
   verify_pixels.py pixel check on an already taken screenshot
   markers.py      day marker on both scales, across several dates
   rects.py        exact geometry of the key pieces (?rects=1 probe)

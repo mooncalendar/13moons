@@ -14,11 +14,14 @@ Exit code 0 if everything passes, 1 if anything fails.
 
 import argparse
 import ast
+import json
+import math
 import os
 import re
 import struct
 import subprocess
 import sys
+import urllib.parse
 import zlib
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -408,6 +411,128 @@ def _img(src, size=512):
             % (src, size, size))
 
 
+def _data_uri(svg):
+    """Percent-encode an inline SVG into a data URI the browser will load.
+
+    Only what has to be encoded is encoded, so the URI stays readable: `#`
+    (fragment), and `<`/`>` which HTML would otherwise choke on inside an
+    attribute.
+    """
+    return ('data:image/svg+xml,'
+            + svg.replace('#', '%23').replace('<', '%3C').replace('>', '%3E'))
+
+
+def _ring_segments(png):
+    """How many gold runs the ring around the disc is broken into."""
+    w, h, ch, px = read_png(png)
+    cx = cy = w / 2.0
+    r = int(round(13.9 / 32.0 * w))
+    N, hits = 2880, []
+    for i in range(N):
+        a = 2 * math.pi * i / N
+        x = int(round(cx + r * math.cos(a)))
+        y = int(round(cy + r * math.sin(a)))
+        j = (y * w + x) * ch
+        hits.append(px[j] > 90 and px[j] > px[j + 2] + 40)
+    return sum(1 for i in range(N) if hits[i] and not hits[i - 1])
+
+
+def _crater_pixels(png_a, png_b):
+    """Pixels inside the disc that differ between an icon and the same icon
+    with its crater group stripped: the craters, counted."""
+    wa, ha, ca, pa = read_png(png_a)
+    wb, hb, cb, pb = read_png(png_b)
+    assert (wa, ha) == (wb, hb), 'the two renders are not the same size'
+    cx = cy = wa / 2.0
+    r = 13.0 / 32.0 * wa * 0.97
+    n = 0
+    for y in range(int(cy - r), int(cy + r)):
+        for x in range(int(cx - r), int(cx + r)):
+            if (x - cx) ** 2 + (y - cy) ** 2 > r * r:
+                continue
+            ia, ib = (y * wa + x) * ca, (y * wb + x) * cb
+            la = 0.2126 * pa[ia] + 0.7152 * pa[ia + 1] + 0.0722 * pa[ia + 2]
+            lb = 0.2126 * pb[ib] + 0.7152 * pb[ib + 1] + 0.0722 * pb[ib + 2]
+            if abs(la - lb) > 2.0:
+                n += 1
+    return n
+
+
+# the crater group inside the icon: <g clip-path='url(#face)' ...> ... </g>
+CRATER_GROUP = re.compile(r"<g clip-path='url\(#face\)'[^>]*>.*?</g>")
+
+
+def test_favicon(langs):
+    """The tab icon carries real detail, not just a two-tone disc.
+
+    At 512 px: the ring is 13 segments (one per moon of the year) and the lit
+    face carries craters — proven by rendering the same icon with the crater
+    group stripped and counting the pixels that change. Checked for the static
+    href (what the browser shows before the script runs) and for the icon the
+    script builds, on waxing, waning and full phases, so the craters are shown
+    to follow the lit side rather than sit anywhere.
+    """
+    href = re.search(r'<link rel="icon" id="favicon" href="([^"]*)"',
+                     open(os.path.join(BASE, 'index.html'),
+                          encoding='utf-8').read()).group(1)
+    static = urllib.parse.unquote(href.replace('data:image/svg+xml,', ''))
+    if not CRATER_GROUP.search(static):
+        print('FAIL favicon    static       no crater group in the href')
+        return 1
+
+    fails = 0
+    png = _icon_page(_img(_data_uri(static)), 'fav_static')
+    png_bare = _icon_page(_img(_data_uri(CRATER_GROUP.sub('', static))),
+                          'fav_static_bare')
+    segs, cpx = _ring_segments(png), _crater_pixels(png, png_bare)
+    bad = []
+    if segs != 13:
+        bad.append('%d ring segments, expected 13' % segs)
+    if _ring_segments(png_bare) != 13:
+        bad.append('the bare render did not load')   # else the diff is meaningless
+    if cpx < 2000:
+        bad.append('only %d crater px on the lit face' % cpx)
+    fails += bool(bad)
+    print('%s favicon    %-12s %s'
+          % ('OK  ' if not bad else 'FAIL', 'static',
+             '13-segment ring \u00b7 %d crater px' % cpx if not bad
+             else ' \u00b7 '.join(bad)))
+
+    # the icon the script builds: the same page twice, crater group kept / cut
+    js = ("<script>%s</script><script>%s</script>"
+          % (open(os.path.join(BASE, 'i18n.js'), encoding='utf-8').read(),
+             open(os.path.join(BASE, 'app.js'), encoding='utf-8').read()))
+    # the pattern travels as a JSON string, so the backslashes survive into JS
+    strip = ".replace(new RegExp(%s),'')" % json.dumps(CRATER_GROUP.pattern)
+    for phase, wax, name in [(0.5, 'true', 'waxing'), (0.5, 'false', 'waning'),
+                             (1.0, 'true', 'full')]:
+        for tag, cut in (('dyn', ''), ('dyn_bare', strip)):
+            body = (js
+                    + "<div id='box'></div><script>"
+                    + "document.getElementById('box').innerHTML = "
+                    + "'<img width=512 height=512 src=\"data:image/svg+xml,'"
+                    + " + encodeURIComponent(faviconSVG(%s, %s)%s) + '\">';"
+                    % (phase, wax, cut)
+                    + "</script>")
+            _icon_page(body, '%s_%s' % (tag, name))
+        a = os.path.join(WORK, 'dyn_%s.png' % name)
+        b = os.path.join(WORK, 'dyn_bare_%s.png' % name)
+        segs, cpx = _ring_segments(a), _crater_pixels(a, b)
+        bad = []
+        if segs != 13:
+            bad.append('%d ring segments' % segs)
+        if _ring_segments(b) != 13:
+            bad.append('the bare render did not load')
+        if cpx < 800:
+            bad.append('only %d crater px' % cpx)
+        fails += bool(bad)
+        print('%s favicon    %-12s %s'
+              % ('OK  ' if not bad else 'FAIL', name,
+                 '13-segment ring \u00b7 %d crater px' % cpx
+                 if not bad else ' \u00b7 '.join(bad)))
+    return fails
+
+
 def test_thumb(langs):
     """Which moon does the thumbnail show? Count it in the image, don't assume.
 
@@ -496,7 +621,7 @@ def main():
                     help='comma-separated languages (default: %s)' % ','.join(LANGS))
     ap.add_argument('--shots', action='store_true', help='full-page screenshots')
     ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot',
-                                       'sticky', 'thumb', 'shots'],
+                                       'sticky', 'favicon', 'thumb', 'shots'],
                     help='run a single test group')
     ap.add_argument('--base',
                     help='URL the app is served from (default: this directory, '
@@ -512,7 +637,7 @@ def main():
     os.makedirs(WORK, exist_ok=True)
     suites = [('data', test_data), ('layout', test_layout),
               ('selftest', test_selftest), ('doot', test_doot),
-              ('sticky', test_sticky),
+              ('sticky', test_sticky), ('favicon', test_favicon),
               ('thumb', test_thumb), ('shots', test_shots)]
     if args.only:
         groups = [s for s in suites if s[0] == args.only]
