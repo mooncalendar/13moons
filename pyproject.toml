@@ -1,0 +1,14 @@
+[project]
+name = "13moons"
+version = "0.0.0"
+description = "Static moon calendar: the app itself and its headless test suite"
+readme = "README.md"
+# The app is static HTML/CSS/JS; Python only drives the tests. The pin lives in
+# .python-version, this is the floor the suite will run on.
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+# Nothing to install, but uv still builds a project environment so `uv run`
+# is the one way to run anything here.
+package = false

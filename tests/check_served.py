@@ -10,7 +10,7 @@ normal suite opens the working directory over `file://` (where `tests/` and
 relative paths included, because the site hangs off a subdirectory, not the
 root.
 
-Usage: python3 tests/check_served.py [-l es,de] [--shots]
+Usage: uv run python tests/check_served.py [-l es,de] [--shots]
 """
 import functools
 import http.server

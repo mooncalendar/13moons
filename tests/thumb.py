@@ -1,6 +1,7 @@
 """Shortcut for the thumbnail check.
 
-`python3 tests/thumb.py` is the same as `python3 tests/check.py --only thumb`.
+`uv run python tests/thumb.py` is the same as
+`uv run python tests/check.py --only thumb`.
 """
 import os
 import sys

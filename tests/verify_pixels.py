@@ -10,7 +10,7 @@ check.py already covers:
   3. the day cell is highlighted in both rows;
   4. every cell wide enough has its label drawn.
 
-Usage: python3 tests/verify_pixels.py [YYYY-MM-DD] [lang] [width]
+Usage: uv run python tests/verify_pixels.py [YYYY-MM-DD] [lang] [width]
 """
 import datetime
 import os

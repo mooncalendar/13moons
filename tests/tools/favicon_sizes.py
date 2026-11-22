@@ -7,8 +7,8 @@ actually uses. Renders the static href at 16, 32 and 64 px and reports, in
 pixels, the warmest point of the ring band and the contrast between the lit and
 the dark half — the phase has to stay readable at every size.
 
-  python3 tests/tools/favicon_sizes.py           # 16, 32 and 64 px
-  python3 tests/tools/favicon_sizes.py 16 48     # only these
+  uv run python tests/tools/favicon_sizes.py           # 16, 32 and 64 px
+  uv run python tests/tools/favicon_sizes.py 16 48     # only these
 """
 
 import math

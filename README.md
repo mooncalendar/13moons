@@ -97,8 +97,8 @@ The static copy in `index.html` is what the browser shows before the script
 runs, so it cannot come from `faviconSVG()`; it is generated instead of edited:
 
 ```
-python3 tests/tools/favicon_gen.py --write   # rewrite the href from the geometry
-python3 tests/tools/favicon_sizes.py         # ring warmth and phase contrast at 16/32/64 px
+uv run python tests/tools/favicon_gen.py --write   # rewrite the href from the geometry
+uv run python tests/tools/favicon_sizes.py         # ring warmth and phase contrast at 16/32/64 px
 ```
 
 The crater list appears twice — in `index.html` (it has to be there before the
@@ -191,7 +191,7 @@ Solar longitude at the 4 seasonal ingresses of 2026: error ≤ 0.3′
 ```
 
 (Cross-check Python in `docs/research/`, runnable with
-`python3 docs/research/verify.py`.)
+`uv run python docs/research/verify.py`.)
 
 ### Constellations
 
@@ -239,26 +239,26 @@ headless Firefox (there is no simulated browser: the values are read from the
 screenshot):
 
 ```
-python3 tests/check.py            # data + layout + selftest, in es/pt/en/de
-python3 tests/check.py --shots    # plus full-page screenshots in tests/shots/
-python3 tests/check.py -l de      # a single language
-python3 tests/check.py --only doot   # the day-out-of-time disclosure
-python3 tests/check.py --only sticky # the date bar stays pinned
-python3 tests/check.py --only favicon # ring segments + craters, counted in pixels
-python3 tests/check.py --only thumb  # the tab thumbnail, counted in pixels
+uv run python tests/check.py                  # data + layout + selftest, es/pt/en/de
+uv run python tests/check.py --shots          # plus full-page screenshots in tests/shots/
+uv run python tests/check.py -l de            # a single language
+uv run python tests/check.py --only doot      # the day-out-of-time disclosure
+uv run python tests/check.py --only sticky    # the date bar stays pinned
+uv run python tests/check.py --only favicon   # ring segments + craters, in pixels
+uv run python tests/check.py --only thumb     # the tab thumbnail, counted in pixels
 ```
 
 And the standalone probes, to look at one detail:
 
 ```
-python3 tests/check_served.py                                          # the artefact served as on Pages
-python3 tests/check.py --base https://mooncalendar.github.io/13moons   # against the published site
-python3 tests/shot_mobile.py es                                        # screenshot at 390 px
-python3 tests/verify_pixels.py 2026-11-01 es 1280                      # pixels, both scales
-python3 tests/markers.py                                               # markers on 4 dates
-python3 tests/rects.py 390 4200 es                                     # exact geometry
-python3 tests/doot.py                                                  # same as --only doot
-python3 tests/thumb.py                                                 # same as --only thumb
+uv run python tests/check_served.py                                          # the artefact served as on Pages
+uv run python tests/check.py --base https://mooncalendar.github.io/13moons   # against the published site
+uv run python tests/shot_mobile.py es                                        # screenshot at 390 px
+uv run python tests/verify_pixels.py 2026-11-01 es 1280                      # pixels, both scales
+uv run python tests/markers.py                                               # markers on 4 dates
+uv run python tests/rects.py 390 4200 es                                     # exact geometry
+uv run python tests/doot.py                                                  # same as --only doot
+uv run python tests/thumb.py                                                 # same as --only thumb
 ```
 
 Expected output: `ALL OK` and exit code 0. Each group prints its count
@@ -271,6 +271,8 @@ fails, the value obtained is printed next to the expected one.
 index.html        structure + design system (hand-written CSS, dark theme)
 i18n.js           the four languages: interface + seals, tones, moons, castles…
 app.js            astronomy + Dreamspell + render (no hard-coded copy)
+pyproject.toml    no dependencies; declares the project so `uv run` is the one way in
+.python-version   the interpreter the suite is run with (uv resolves it)
 tests/
   check.py        the suite: data, layout, selftest, doot, sticky, favicon, thumb
   verify_pixels.py pixel check on an already taken screenshot
@@ -283,8 +285,10 @@ tests/
 docs/research/    Python validation prototypes (design phase)
 ```
 
-No dependencies: just Python 3 and a Firefox for the tests. The app itself is
-static — open `index.html` and it works.
+No dependencies: just `uv` and a Firefox for the tests. The app itself is
+static — open `index.html` and it works. `uv run` builds the environment from
+`pyproject.toml` and the pinned interpreter in `.python-version` (3.12), so
+nothing is installed globally and `uv.lock` keeps it the same everywhere.
 
 ## Sources
 

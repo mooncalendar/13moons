@@ -1,4 +1,4 @@
-# salidas de la suite y del navegador headless
+# suite output and headless browser profile
 tests/work/
 tests/profile/
 tests/shots/
@@ -6,6 +6,9 @@ _site/
 __pycache__/
 *.pyc
 
-# artefactos de depuración
+# uv environment: recreated on demand by `uv run`. uv.lock is committed.
+.venv/
+
+# debugging artefacts
 *.pgm
 *.tmp

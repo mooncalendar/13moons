@@ -5,9 +5,9 @@ Everything is checked in a real headless Firefox against the published page,
 no frameworks: the app itself exposes instrumented modes through the URL
 (?selftest, ?barcode=1, ?barcode=layout) and this reads them back.
 
-  python3 tests/check.py             # data + layout + selftest, 4 languages
-  python3 tests/check.py --shots     # plus full-page screenshots
-  python3 tests/check.py -l es,de    # only some languages
+  uv run python tests/check.py             # data + layout + selftest, 4 languages
+  uv run python tests/check.py --shots     # plus full-page screenshots
+  uv run python tests/check.py -l es,de    # only some languages
 
 Exit code 0 if everything passes, 1 if anything fails.
 """

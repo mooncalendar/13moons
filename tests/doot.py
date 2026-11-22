@@ -1,7 +1,7 @@
 """Shortcut: the day-out-of-time disclosure now lives in check.py.
 
-`python3 tests/doot.py` still works and is the same as
-`python3 tests/check.py --only doot`.
+`uv run python tests/doot.py` still works and is the same as
+`uv run python tests/check.py --only doot`.
 """
 import os
 import sys

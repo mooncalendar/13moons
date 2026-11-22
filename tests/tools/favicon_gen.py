@@ -8,8 +8,8 @@ the ring stays closed: 13 dashes over the exact circumference, rotated half a
 dash so the top of the circle falls in the middle of a segment instead of on a
 gap.
 
-  python3 tests/tools/favicon_gen.py           # print the SVG
-  python3 tests/tools/favicon_gen.py --write   # rewrite the href in index.html
+  uv run python tests/tools/favicon_gen.py           # print the SVG
+  uv run python tests/tools/favicon_gen.py --write   # rewrite the href in index.html
 
 The crater list is the same as ICON_CRATERS in app.js — it is duplicated
 because neither copy can be at runtime the source of the other.
