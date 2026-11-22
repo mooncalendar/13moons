@@ -350,6 +350,64 @@ def test_doot(langs):
     return fails
 
 
+def test_sticky(langs):
+    """The date controls stay reachable once the page is scrolled.
+
+    The nav is sticky, so its top must read 0 at every scroll position except
+    the top of the page; it has to paint its glass background only while
+    pinned; and it must not change height when pinned (that would shift the
+    page under the reader's finger).
+    """
+    fails = 0
+    # viewports shorter than the page, or there is nothing to scroll
+    for w, h, tag in [(1280, 900, 'desk'), (390, 760, 'mob')]:
+        png = os.path.join(WORK, 'sticky_%s.png' % tag)
+        out = browser('%s/index.html?sticky=1&lang=en&d=2026-11-22' % URL_BASE,
+                      png, w, h, capture=True)
+        rows = re.findall(r'sticky scroll=(\d+) top=(-?\d+) h=(\d+) stuck=(\d)', out)
+        bad = []
+        if len(rows) != 4:
+            bad.append('%d measurements, expected 4' % len(rows))
+        else:
+            if int(rows[0][1]) <= 0:
+                bad.append('bar already pinned at the top of the page')
+            for scroll, top, _, stuck in rows[1:]:
+                if int(top) != 0:
+                    bad.append('at scroll %s top=%s' % (scroll, top))
+                if stuck != '1':
+                    bad.append('no glass at scroll %s' % scroll)
+            if len({r[2] for r in rows}) != 1:
+                bad.append('bar height changes when pinned: %s'
+                           % sorted({r[2] for r in rows}))
+        fails += bool(bad)
+        print('%s sticky     %-4s %s'
+              % ('OK  ' if not bad else 'FAIL', tag,
+                 'pinned at 4 scroll positions · glass on · height constant'
+                 if not bad else ' · '.join(bad)))
+    return fails
+
+
+def _icon_page(body, name, size=512):
+    """Write a page that paints one icon at `size` px on white, and render it."""
+    page = ("<!DOCTYPE html><html><body style='margin:0;background:#fff'>"
+            + body + "</body></html>")
+    path = os.path.join(WORK, name + '.html')
+    open(path, 'w', encoding='utf-8').write(page)
+    png = os.path.join(WORK, name + '.png')
+    browser('file://%s' % path, png, size, size)
+    return png
+
+
+def _img(src, size=512):
+    """An <img> tag for one icon at `size` px.
+
+    Double quotes around src: a data URI of an SVG carries single quotes in its
+    attributes, so a single-quoted attribute would be cut at the first one.
+    """
+    return ('<img src="%s" width="%d" height="%d" style="display:block">'
+            % (src, size, size))
+
+
 def test_thumb(langs):
     """Which moon does the thumbnail show? Count it in the image, don't assume.
 
@@ -438,7 +496,7 @@ def main():
                     help='comma-separated languages (default: %s)' % ','.join(LANGS))
     ap.add_argument('--shots', action='store_true', help='full-page screenshots')
     ap.add_argument('--only', choices=['data', 'layout', 'selftest', 'doot',
-                                       'thumb', 'shots'],
+                                       'sticky', 'thumb', 'shots'],
                     help='run a single test group')
     ap.add_argument('--base',
                     help='URL the app is served from (default: this directory, '
@@ -454,6 +512,7 @@ def main():
     os.makedirs(WORK, exist_ok=True)
     suites = [('data', test_data), ('layout', test_layout),
               ('selftest', test_selftest), ('doot', test_doot),
+              ('sticky', test_sticky),
               ('thumb', test_thumb), ('shots', test_shots)]
     if args.only:
         groups = [s for s in suites if s[0] == args.only]

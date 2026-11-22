@@ -762,6 +762,47 @@ document.addEventListener('keydown', e => {
   if (e.key.toLowerCase() === 't') { $('today').click(); }
 });
 
+/* ---------------------------------- sticky nav */
+/* The date controls are sticky; they only paint a background once something
+   has scrolled under them, so the top of the page stays clean. The class does
+   not change the bar's size, so toggling it cannot shift the layout. */
+(function stickyNav() {
+  const nav = $('nav');
+  if (!nav) return;
+  let queued = false;
+  const update = () => {
+    queued = false;
+    nav.classList.toggle('stuck', nav.getBoundingClientRect().top <= 0.5);
+  };
+  // the test bench calls this directly, so its measurements do not race the
+  // animation frame the scroll handler waits for
+  nav.updateSticky = update;
+  addEventListener('scroll', () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(update);
+  }, { passive: true });
+  addEventListener('resize', update);
+  update();
+})();
+
+// sticky-nav check: index.html?sticky=1
+// Scrolls down and reports the bar's position in the viewport, so a broken
+// sticky (an ancestor with overflow, the bar moved back inside the header)
+// shows up as a negative top instead of a silent regression.
+if (new URLSearchParams(location.search).has('sticky')) {
+  const nav = $('nav');
+  [0, 300, 1200, 2600].forEach(y => {
+    scrollTo(0, y);
+    nav.updateSticky();
+    const r = nav.getBoundingClientRect();
+    console.log(`sticky scroll=${Math.round(scrollY)} top=${Math.round(r.top)}`
+      + ` h=${Math.round(r.height)}`
+      + ` stuck=${nav.classList.contains('stuck') ? 1 : 0}`);
+  });
+  scrollTo(0, 0);
+}
+
 /* ---------------------------------- stars */
 (function stars() {
   const box = $('stars');

@@ -45,7 +45,8 @@
     -webkit-font-smoothing:antialiased;
     line-height:1.55;
     min-height:100%;
-    overflow-x:hidden;
+    overflow-x:hidden;   /* fallback for engines without clip */
+    overflow-x:clip;     /* does not create a scroll container, so sticky works */
   }
   /* ---------- starfield ---------- */
   #stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
@@ -53,10 +54,11 @@
   @keyframes twinkle{from{opacity:.15;transform:scale(.85)}to{opacity:.85;transform:scale(1)}}
   @media (prefers-reduced-motion:reduce){.star{animation:none;opacity:.45}}
 
-  .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:38px 22px 64px}
+  .wrap{position:relative;z-index:1;--pad:22px;
+        max-width:1200px;margin:0 auto;padding:38px var(--pad) 64px}
 
   /* ---------- header ---------- */
-  header.top{display:flex;flex-direction:column;gap:22px;margin-bottom:30px}
+  header.top{display:flex;flex-direction:column;gap:22px}
   .brandline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
   .brandline h1{
     font-family:var(--serif);font-weight:400;font-size:clamp(26px,3.4vw,40px);
@@ -65,7 +67,20 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
   .brandline .sub{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:var(--muted2)}
-  .nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  /* the date controls stick to the top edge of the viewport, so a date can be
+     changed from anywhere in the page; the bar only shows its glass once
+     something has scrolled under it (.stuck, set from JS) */
+  .nav{position:sticky;top:0;z-index:30;
+       display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+       margin:22px calc(var(--pad) * -1) 30px;padding:10px var(--pad);
+       border-bottom:1px solid transparent;
+       transition:background .22s ease,border-color .22s ease,box-shadow .22s ease}
+  .nav.stuck{background:rgba(6,7,13,.82);
+             -webkit-backdrop-filter:blur(16px) saturate(140%);
+             backdrop-filter:blur(16px) saturate(140%);
+             border-bottom-color:var(--line);
+             box-shadow:0 12px 34px rgba(0,0,0,.5)}
+  @media (prefers-reduced-motion:reduce){.nav{transition:none}}
   .btn{
     appearance:none;cursor:pointer;border:1px solid var(--line);background:var(--panel);
     color:var(--text);border-radius:11px;padding:9px 13px;font:inherit;font-size:13px;
@@ -337,15 +352,17 @@
       <h1 data-i18n="brand">Sincronario de las 13 Lunas</h1>
       <span class="sub" data-i18n="brandSub">13&nbsp;luas · 28&nbsp;días · Tzolkin</span>
     </div>
-    <div class="nav">
-      <button class="btn icon" id="prev" data-i18n-aria="prevDay" data-i18n-title="prevDay" data-title-suffix=" (←)" title="Día anterior (←)">‹</button>
-      <button class="btn accent" id="today" data-i18n="today" data-i18n-title="today" data-title-suffix=" (T)">Hoy</button>
-      <button class="btn icon" id="next" data-i18n-aria="nextDay" data-i18n-title="nextDay" data-title-suffix=" (→)" title="Día siguiente (→)">›</button>
-      <input type="date" id="datepick" data-i18n-aria="pickDate" aria-label="Elegir fecha">
-      <span id="headline" style="color:var(--muted);font-size:13px;margin-left:4px"></span>
-      <div class="langsw" id="langSw" role="group" aria-label="Idioma"></div>
-    </div>
   </header>
+
+  <!-- NAV · sticky: the date controls stay reachable at any scroll position -->
+  <div class="nav" id="nav">
+    <button class="btn icon" id="prev" data-i18n-aria="prevDay" data-i18n-title="prevDay" data-title-suffix=" (←)" title="Día anterior (←)">‹</button>
+    <button class="btn accent" id="today" data-i18n="today" data-i18n-title="today" data-title-suffix=" (T)">Hoy</button>
+    <button class="btn icon" id="next" data-i18n-aria="nextDay" data-i18n-title="nextDay" data-title-suffix=" (→)" title="Día siguiente (→)">›</button>
+    <input type="date" id="datepick" data-i18n-aria="pickDate" aria-label="Elegir fecha">
+    <span id="headline" style="color:var(--muted);font-size:13px;margin-left:4px"></span>
+    <div class="langsw" id="langSw" role="group" aria-label="Idioma"></div>
+  </div>
 
   <main>
     <!-- HERO -->
