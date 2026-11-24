@@ -251,6 +251,7 @@ uv run python tests/check.py --only thumb     # the tab thumbnail, counted in pi
 And the standalone probes, to look at one detail:
 
 ```
+uv run python tests/tools/check_live.py                                      # is the live site my code?
 uv run python tests/check_served.py                                          # the artefact served as on Pages
 uv run python tests/check.py --base https://mooncalendar.github.io/13moons   # against the published site
 uv run python tests/shot_mobile.py es                                        # screenshot at 390 px
@@ -281,7 +282,8 @@ tests/
   shot_mobile.py  screenshot at 390 px wide
   doot.py         shortcut for --only doot
   thumb.py        shortcut for --only thumb
-  tools/          ASCII dump, ink count per segment, icon generator and sizes
+  tools/          ASCII dump, ink per segment, icon generator and sizes,
+                  live-vs-local comparison of the published site
 docs/research/    Python validation prototypes (design phase)
 ```
 
